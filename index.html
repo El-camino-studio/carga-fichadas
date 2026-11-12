@@ -1,0 +1,1511 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Carga de Fichadas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de trabajo, archivos → descarga; revisión opcional plegada */
+:root {
+  --bg: #f3f4f1; --surface: #ffffff; --ink: #1d2320; --muted: #5d665f; --line: #d9ddd6;
+  --accent: #2f6b57; --accent-ink: #ffffff; --accent-soft: #e2ede7;
+  --warn: #9a6512; --warn-soft: #f6ebd6; --bad: #a83c33; --bad-soft: #f5e1de; --ok: #2f6b57; --ok-soft: #e2ede7;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151917; --surface: #1d2320; --ink: #e6ebe7; --muted: #9aa49d; --line: #323a35;
+  --accent: #6fb79a; --accent-ink: #0f1311; --accent-soft: #23362d;
+  --warn: #e0ac55; --warn-soft: #3a2f1c; --bad: #e98a80; --bad-soft: #3d2522; --ok: #6fb79a; --ok-soft: #23362d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151917; --surface: #1d2320; --ink: #e6ebe7; --muted: #9aa49d; --line: #323a35;
+  --accent: #6fb79a; --accent-ink: #0f1311; --accent-soft: #23362d;
+  --warn: #e0ac55; --warn-soft: #3a2f1c; --bad: #e98a80; --bad-soft: #3d2522; --ok: #6fb79a; --ok-soft: #23362d; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px }
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px }
+header h1 { font-family: var(--f-display); font-weight: 600; font-size: 30px; letter-spacing: -0.01em; margin: 0; text-wrap: balance }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 64ch }
+section.step { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.step-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.step-h .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); letter-spacing: .06em }
+.step-h h2 { font-family: var(--f-display); font-weight: 600; font-size: 20px; margin: 0 }
+.step-h .hint { color: var(--muted); font-size: 13px; flex-basis: 100% }
+.drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px }
+.drop { border: 1.5px dashed var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: border-color .15s, background .15s; min-width: 0 }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft) }
+.drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px }
+.drop.done { border-style: solid; border-color: var(--accent) }
+.drop .lab { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600 }
+.drop .what { font-weight: 600 }
+.drop .file { font-family: var(--f-mono); font-size: 13px; color: var(--accent); overflow-wrap: anywhere }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0 }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted) }
+.stats b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; font-variant-numeric: tabular-nums }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px }
+table { width: 100%; border-collapse: collapse; font-size: 14px }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; background: var(--bg); position: sticky; top: 0 }
+tr:last-child td { border-bottom: 0 }
+td.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+select, input[type=text] { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px }
+input[type=text].hm { font-family: var(--f-mono); width: 6.8em; text-align: center; font-variant-numeric: tabular-nums }
+input[type=text].hm.miss { border-color: var(--warn); background: var(--warn-soft) }
+input[type=text].hm.bad { border-color: var(--bad); background: var(--bad-soft) }
+select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap }
+.pill.ok { background: var(--ok-soft); color: var(--ok) }
+.pill.warn { background: var(--warn-soft); color: var(--warn) }
+.pill.bad { background: var(--bad-soft); color: var(--bad) }
+.notes { display: flex; flex-direction: column; gap: 8px }
+.note { border-radius: 8px; padding: 10px 12px; font-size: 14px }
+.note.warn { background: var(--warn-soft) }
+.note.bad { background: var(--bad-soft) }
+.note.info { background: var(--accent-soft) }
+.note b { font-weight: 600 }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center }
+.grow { flex: 1 }
+button { font: inherit; font-weight: 600; font-size: 14px; border-radius: 7px; padding: 9px 16px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink) }
+button.ghost { background: transparent; color: var(--accent) }
+button:disabled { opacity: .45; cursor: not-allowed }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+label.chk { display: inline-flex; gap: 8px; align-items: center; font-size: 14px }
+.muted { color: var(--muted); font-size: 13px }
+.empty { color: var(--muted); font-size: 14px; padding: 6px 0 }
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 13px; color: var(--muted) }
+.flow div { border-top: 2px solid var(--line); padding-top: 8px }
+.flow b { display: block; color: var(--ink); font-size: 14px }
+.msg { font-size: 14px }
+.period { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: 14px }
+.period input[type=date] { font: inherit; font-family: var(--f-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px }
+.period input[type=date]:focus { outline: 2px solid var(--accent); outline-offset: 1px }
+section.result { border-color: var(--accent); border-width: 1.5px }
+button.big { font-size: 16px; padding: 12px 22px }
+details.step > summary { cursor: pointer; list-style: none; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap }
+details.step > summary::-webkit-details-marker { display: none }
+details.step > summary::before { content: "▸"; color: var(--muted); font-size: 12px }
+details.step[open] > summary::before { content: "▾" }
+details.step > summary .sum-t { font-family: var(--f-display); font-weight: 600; font-size: 17px }
+details.step:not([open]) { gap: 0 }
+details.step p { margin: 0 }
+.msg.err { color: var(--bad) }
+.paytiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600 }
+.tile .v { font-family: var(--f-mono); font-size: 19px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+.tile.main { border-color: var(--accent); background: var(--accent-soft) }
+.pay table { font-size: 13px }
+.pay th, .pay td { padding: 7px 8px }
+.pay td.n, .pay th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.pay th.n { font-family: var(--f-body) }
+.pay td.name { position: sticky; left: 0; background: var(--surface); font-weight: 500; z-index: 1 }
+.pay th.name { position: sticky; left: 0; z-index: 2 }
+.pay td.day { text-align: center; font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink) }
+.pay td.day .x { color: var(--warn); font-size: 11px; margin-left: 2px }
+.pay td.day.neg { background: var(--bad-soft); color: var(--bad); font-weight: 600 }
+.pay td.day.zero { color: var(--muted) }
+.pay td.pagar { font-weight: 600; background: var(--accent-soft) }
+.pay tr.idle td { color: var(--muted) }
+.pay tr.idle td.pagar { background: transparent }
+.pay tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); border-bottom: 0 }
+.pay th .d { display: block; font-family: var(--f-mono); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 11px }
+.busy { color: var(--muted); font-size: 14px }
+.msg.ok { color: var(--ok) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Carga de fichadas</h1>
+    <p>Arrastrá el reporte del reloj y la planilla de sueldos. La app completa los horarios en <i>Horas Trabajadas</i>, recalcula <i>Cálculo de Salario</i> y <i>Presentismo y Productividad</i>, y te muestra cuánto cobra cada empleado el viernes.</p>
+  </header>
+
+  <section class="step" id="s1">
+    <div class="drops">
+      <label class="drop" id="dropDat" for="fDat">
+        <span class="lab">1 · Fichadas</span>
+        <span class="what">Reporte del reloj (Word .docx, .dat o .txt)</span>
+        <span class="file" id="nDat">Arrastrá el archivo o hacé clic para elegirlo</span>
+        <input type="file" id="fDat" accept=".docx,.dat,.txt,.csv">
+      </label>
+      <label class="drop" id="dropXls" for="fXls">
+        <span class="lab">2 · Planilla</span>
+        <span class="what">Liquidación de sueldos (.xlsm / .xlsx)</span>
+        <span class="file" id="nXls">Arrastrá el archivo o hacé clic para elegirlo</span>
+        <input type="file" id="fXls" accept=".xlsm,.xlsx">
+      </label>
+    </div>
+    <div class="msg" id="msg1"></div>
+  </section>
+
+  <section class="step result" id="s4" hidden>
+    <div class="step-h"><h2>Planilla lista</h2></div>
+    <div class="period">
+      <label for="pDesde">Cargar desde</label><input type="date" id="pDesde">
+      <label for="pHasta">hasta</label><input type="date" id="pHasta">
+    </div>
+    <p class="muted" id="periodNote"></p>
+    <div class="stats" id="stats"></div>
+    <div class="row"><button id="btnGo" class="big">Descargar planilla completa</button><span class="msg" id="msg4"></span></div>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <section class="step" id="s5" hidden>
+    <div class="step-h"><h2>Liquidación semanal</h2>
+      <span class="hint">Semana de viernes a jueves, como en la hoja Cálculo de Salario. Se cobra el viernes siguiente.</span></div>
+    <div class="row">
+      <label class="muted" for="wkSel">Semana</label>
+      <select id="wkSel"></select>
+      <span class="grow"></span><span class="muted" id="wkInfo"></span>
+    </div>
+    <div class="paytiles" id="payTiles"></div>
+    <div class="tbl-wrap pay"><table>
+      <thead id="payHead"></thead>
+      <tbody id="payBody"></tbody>
+      <tfoot id="payFoot"></tfoot>
+    </table></div>
+    <div class="notes" id="payNotes"></div>
+    <p class="muted">Horas extra: lo que pasa de 10,5 h por día, y todo lo trabajado sábado, domingo o feriado. Se pagan dobles: (normales + 2 × extra) × valor hora. Premios: presentismo y productividad del mes anterior, se suman en la semana que incluye el día 15.</p>
+  </section>
+
+  <details class="step" id="s3" hidden>
+    <summary><span class="sum-t">Revisar o corregir días</span> <span class="muted">(opcional)</span> <span class="muted" id="revCount"></span></summary>
+    <p class="muted">Días con alguna marca faltante y días sin marcas (cargados como ausente). Si cambiás algo acá, volvé a descargar. Los horarios van en 24 horas con am/pm aclarado (por ejemplo 07:03 am, 18:31 pm); podés escribir solo 18:31.</p>
+    <div class="row">
+      <label class="muted" for="fltLeg">Legajo</label>
+      <select id="fltLeg"><option value="">Todos</option></select>
+      <label class="chk"><input type="checkbox" id="fltPend" checked> Solo pendientes</label>
+    </div>
+    <div class="tbl-wrap" style="max-height: 460px"><table>
+      <thead><tr><th>Fecha</th><th>Legajo</th><th>Nombre</th><th>Reloj</th><th>Entrada</th><th>Sal. almuerzo</th><th>Vuelta</th><th>Salida</th><th>Estado</th></tr></thead>
+      <tbody id="revBody"></tbody>
+    </table></div>
+  </details>
+
+  <details class="step" id="s2" hidden>
+    <summary><span class="sum-t">Detalle por empleado y opciones</span></summary>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Legajo</th><th>Nombre</th><th>Días con marcas</th><th>Días incompletos</th><th>Ausencias</th><th>Bloque (columnas)</th></tr></thead>
+      <tbody id="mapBody"></tbody>
+    </table></div>
+    <label class="chk"><input type="checkbox" id="optOver"> Reemplazar también los días que ya tienen horarios cargados en la planilla</label>
+  </details>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// Núcleo: lee el attlog del reloj, lee/escribe la planilla .xlsm editando su XML (sin tocar fórmulas ni formato).
+(function (root) {
+  const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const SHEET_HT = 'Horas Trabajadas';
+  const SHEET_LEG = 'Legajos';
+  const BLOCK_W = 9;
+  const ESTADO_PRESENTE = 'Presente';
+  const ESTADO_AUSENTE = 'Ausente sin justificacion';
+  const SHEET_FER = 'Feriados y dias No laborables';
+
+  // ---------- utilidades de celdas ----------
+  function colToNum(s) { let n = 0; for (const ch of s) n = n * 26 + (ch.charCodeAt(0) - 64); return n; }
+  function numToCol(n) { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+  function splitRef(ref) { const m = /^([A-Z]+)(\d+)$/.exec(ref); return { col: colToNum(m[1]), row: +m[2] }; }
+  function kids(el, name) { const out = []; for (let n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 1 && (n.localName || n.nodeName) === name) out.push(n); return out; }
+  function textOf(el) { let s = ''; const ts = el.getElementsByTagName('t'); for (let i = 0; i < ts.length; i++) s += ts[i].textContent; return s; }
+
+  // Fecha serial de Excel <-> 'YYYY-MM-DD'
+  const EPOCH = Date.UTC(1899, 11, 30);
+  function serialToISO(n) { return new Date(EPOCH + Math.round(n) * 86400000).toISOString().slice(0, 10); }
+  function isoToSerial(s) { const [y, m, d] = s.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 86400000); }
+
+  // ---------- attlog ----------
+  // Cada línea: legajo \t YYYY-MM-DD HH:MM:SS \t ... (formato de relojes ZKTeco)
+  function parseAttlog(text, opts) {
+    const dupMin = (opts && opts.dupMinutes != null) ? opts.dupMinutes : 2;
+    const raw = new Map(); // leg -> date -> [segundos del día]
+    let total = 0, invalid = 0;
+    for (const line of text.split(/\r?\n/)) {
+      const t = line.trim(); if (!t) continue;
+      total++;
+      let leg, y, mo, d, hh, mi, ss, m;
+      if ((m = /^(\d+)\s+(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s|$)/.exec(t))) { leg = +m[1]; y = +m[2]; mo = +m[3]; d = +m[4]; hh = +m[5]; mi = +m[6]; ss = +(m[7] || 0); }
+      else if ((m = /^(\d+)\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s|$)/.exec(t))) { leg = +m[1]; d = +m[2]; mo = +m[3]; y = +m[4]; hh = +m[5]; mi = +m[6]; ss = +(m[7] || 0); }
+      else { invalid++; continue; }
+      if (!leg || y < 2000 || mo < 1 || mo > 12 || d < 1 || d > 31 || hh > 23 || mi > 59 || ss > 59) { invalid++; continue; }
+      const date = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      if (!raw.has(leg)) raw.set(leg, new Map());
+      const byDay = raw.get(leg);
+      if (!byDay.has(date)) byDay.set(date, []);
+      byDay.get(date).push(hh * 3600 + mi * 60 + ss);
+    }
+    // Ordenar, eliminar marcas dobles (< dupMin minutos de la anterior) y truncar a minutos
+    let dupes = 0, minDate = null, maxDate = null;
+    const punches = new Map();
+    for (const [leg, byDay] of raw) {
+      const out = new Map();
+      for (const [date, secs] of byDay) {
+        secs.sort((a, b) => a - b);
+        const kept = [];
+        for (const s of secs) {
+          if (kept.length && s - kept[kept.length - 1] < dupMin * 60) { dupes++; continue; }
+          kept.push(s);
+        }
+        out.set(date, kept.map(s => Math.floor(s / 60)));
+        if (!minDate || date < minDate) minDate = date;
+        if (!maxDate || date > maxDate) maxDate = date;
+      }
+      punches.set(leg, out);
+    }
+    return { punches, total, invalid, dupes, minDate, maxDate };
+  }
+
+  // ---------- libro ----------
+  async function openWorkbook(zip, DOMParserImpl) {
+    const DP = DOMParserImpl || DOMParser;
+    const parse = s => new DP().parseFromString(s, 'application/xml');
+    const wbXml = parse(await zip.file('xl/workbook.xml').async('string'));
+    const relsXml = parse(await zip.file('xl/_rels/workbook.xml.rels').async('string'));
+    const rels = {};
+    const relEls = relsXml.getElementsByTagName('Relationship');
+    for (let i = 0; i < relEls.length; i++) rels[relEls[i].getAttribute('Id')] = relEls[i].getAttribute('Target');
+    const sheetPath = {};
+    const sh = wbXml.getElementsByTagName('sheet');
+    for (let i = 0; i < sh.length; i++) {
+      const rid = sh[i].getAttribute('r:id') || sh[i].getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+      let tgt = rels[rid]; if (!tgt) continue;
+      tgt = tgt.replace(/^\/?xl\//, '').replace(/^\//, '');
+      sheetPath[sh[i].getAttribute('name')] = 'xl/' + tgt;
+    }
+    if (!sheetPath[SHEET_HT]) throw new Error(`No encontré la hoja "${SHEET_HT}" en el archivo.`);
+    if (!sheetPath[SHEET_LEG]) throw new Error(`No encontré la hoja "${SHEET_LEG}" en el archivo.`);
+    let ss = [];
+    const ssFile = zip.file('xl/sharedStrings.xml');
+    if (ssFile) {
+      const ssXml = parse(await ssFile.async('string'));
+      const sis = ssXml.getElementsByTagName('si');
+      for (let i = 0; i < sis.length; i++) ss.push(textOf(sis[i]));
+    }
+    const ht = parse(await zip.file(sheetPath[SHEET_HT]).async('string'));
+    const leg = parse(await zip.file(sheetPath[SHEET_LEG]).async('string'));
+    const fer = sheetPath[SHEET_FER] ? new Sheet(parse(await zip.file(sheetPath[SHEET_FER]).async('string')), ss) : null;
+    return { zip, wbXml, sheetPath, ss, ht: new Sheet(ht, ss), leg: new Sheet(leg, ss), fer };
+  }
+
+  class Sheet {
+    constructor(doc, ss) {
+      this.doc = doc; this.ss = ss;
+      this.sheetData = doc.getElementsByTagName('sheetData')[0];
+      this.rows = new Map();
+      for (const r of kids(this.sheetData, 'row')) this.rows.set(+r.getAttribute('r'), r);
+      this.cellCache = new Map();
+    }
+    // Índice de celdas por fila, armado una sola vez por fila
+    _rowIndex(row) {
+      if (!this._idx) this._idx = new Map();
+      let m = this._idx.get(row);
+      if (!m) { m = new Map(); const r = this.rows.get(row); if (r) for (const c of kids(r, 'c')) m.set(splitRef(c.getAttribute('r')).col, c); this._idx.set(row, m); }
+      return m;
+    }
+    cell(row, col) { return this._rowIndex(row).get(col) || null; }
+    value(row, col) {
+      const c = this.cell(row, col); if (!c) return null;
+      const t = c.getAttribute('t');
+      if (t === 'inlineStr') return textOf(c);
+      const v = kids(c, 'v')[0]; if (!v) return null;
+      const txt = v.textContent;
+      if (t === 's') return this.ss[+txt];
+      if (t === 'str' || t === 'e') return txt;
+      if (t === 'b') return txt === '1';
+      return txt === '' ? null : Number(txt);
+    }
+    hasFormula(row, col) { const c = this.cell(row, col); return !!(c && kids(c, 'f').length); }
+    ensureCell(row, col) {
+      let c = this.cell(row, col); if (c) return c;
+      let r = this.rows.get(row);
+      if (!r) {
+        r = this.doc.createElementNS(NS, 'row'); r.setAttribute('r', String(row));
+        let next = null; for (const [n, el] of this.rows) if (n > row && (!next || n < +next.getAttribute('r'))) next = el;
+        this.sheetData.insertBefore(r, next); this.rows.set(row, r);
+      }
+      c = this.doc.createElementNS(NS, 'c'); c.setAttribute('r', numToCol(col) + row);
+      let before = null; for (const x of kids(r, 'c')) { if (splitRef(x.getAttribute('r')).col > col) { before = x; break; } }
+      r.insertBefore(c, before); r.removeAttribute('spans');
+      this._rowIndex(row).set(col, c);
+      return c;
+    }
+    _strip(c) { c.removeAttribute('t'); while (c.firstChild) c.removeChild(c.firstChild); }
+    clear(row, col) { const c = this.cell(row, col); if (c && !kids(c, 'f').length) this._strip(c); }
+    setNumber(row, col, n) { const c = this.ensureCell(row, col); this._strip(c); const v = this.doc.createElementNS(NS, 'v'); v.textContent = String(n); c.appendChild(v); }
+    setText(row, col, s) {
+      const c = this.ensureCell(row, col); this._strip(c); c.setAttribute('t', 'inlineStr');
+      const is = this.doc.createElementNS(NS, 'is'); const t = this.doc.createElementNS(NS, 't'); t.textContent = s; is.appendChild(t); c.appendChild(is);
+    }
+  }
+
+  // ---------- estructura de la planilla ----------
+  function readStructure(wb) {
+    const ht = wb.ht;
+    // Bloques: celdas "Legajo:" en la fila 2; el número de legajo está 3 columnas a la derecha
+    const blocks = [];
+    const row2 = ht.rows.get(2);
+    if (row2) for (const c of kids(row2, 'c')) {
+      const col = splitRef(c.getAttribute('r')).col;
+      if (String(ht.value(2, col) || '').trim() === 'Legajo:') {
+        const v = ht.value(2, col + 3);
+        blocks.push({ pos: blocks.length + 1, col, legCol: col + 3, legajo: (typeof v === 'number') ? v : (v ? parseInt(v, 10) || null : null) });
+      }
+    }
+    // Fechas: A1 es la fecha base; A4 = A1+1, cada fila suma 1 día
+    const base = ht.value(1, 1);
+    if (typeof base !== 'number') throw new Error('No pude leer la fecha base en Horas Trabajadas!A1.');
+    let lastRow = 4; for (const n of ht.rows.keys()) if (n > lastRow && ht.cell(n, 1)) lastRow = n;
+    const dateToRow = iso => { const d = isoToSerial(iso) - base; if (d < 1) return null; const r = d + 3; return r <= lastRow ? r : null; };
+    // Legajos: A = legajo, B = nombre, C = número de orden (bloque)
+    const roster = [];
+    for (const [n] of wb.leg.rows) {
+      if (n < 2) continue;
+      const a = wb.leg.value(n, 1);
+      if (typeof a === 'number' && a > 0 && Number.isInteger(a)) roster.push({ row: n, legajo: a, nombre: String(wb.leg.value(n, 2) || '').trim(), orden: wb.leg.value(n, 3) });
+    }
+    roster.sort((x, y) => x.row - y.row);
+    // Estados posibles (Legajos, columna F) y días no laborables (feriados, sábados, domingos)
+    const estados = [];
+    for (let r = 1; r <= 20; r++) { const v = wb.leg.value(r, 6); if (typeof v === 'string' && v.trim()) estados.push(v.trim()); }
+    const presente = estados.find(e => /^presente$/i.test(e)) || ESTADO_PRESENTE;
+    const ausente = estados.find(e => /ausente sin/i.test(e)) || ESTADO_AUSENTE;
+    const noLaborables = new Map();
+    if (wb.fer) for (const [n] of wb.fer.rows) { const a = wb.fer.value(n, 1); if (typeof a === 'number' && a > 0) noLaborables.set(serialToISO(a), String(wb.fer.value(n, 2) || '')); }
+    return { blocks, base, baseISO: serialToISO(base), lastRow, dateToRow, roster, estados, presente, ausente, noLaborables };
+  }
+
+  // ---------- limpiar ----------
+  function clearSheet(wb, st, opts) {
+    const clearLegajos = opts && opts.clearLegajos;
+    let n = 0;
+    for (const b of st.blocks) {
+      for (let r = 4; r <= st.lastRow; r++) for (let k = 0; k < 7; k++) { if (wb.ht.value(r, b.col + k) != null) n++; wb.ht.clear(r, b.col + k); }
+      if (clearLegajos) wb.ht.clear(2, b.legCol);
+    }
+    return n;
+  }
+
+  // ---------- plan de carga ----------
+  // mapping: Map(legajo -> número de bloque)
+  // Solo lee la asignación que ya tiene la planilla (fila 2 de Horas Trabajadas). No asigna nada nuevo.
+  function autoMapping(st) {
+    const map = new Map(), dup = [];
+    for (const b of st.blocks) if (b.legajo) { if (map.has(b.legajo)) dup.push({ legajo: b.legajo, pos: b.pos }); else map.set(b.legajo, b.pos); }
+    map.duplicados = dup;
+    return map;
+  }
+
+  // ---------- ubicar marcas en las 4 columnas ----------
+  // Ventanas horarias (minutos del día) para reconocer cada marca cuando faltan algunas
+  const VENT = { almuerzoDesde: 11 * 60, vueltaDesde: 12 * 60 + 30, salidaDesde: 14 * 60 + 30 };
+  function slotOf(m) { return m < VENT.almuerzoDesde ? 0 : m < VENT.vueltaDesde ? 1 : m < VENT.salidaDesde ? 2 : 3; }
+
+  // Devuelve [entrada, salida almuerzo, vuelta almuerzo, salida] (null = falta) y el estado
+  function toSlots(mins) {
+    const s = [null, null, null, null];
+    const n = mins.length;
+    if (n === 4) return { slots: mins.slice(), status: 'ok' };
+    if (n === 2) { s[0] = mins[0]; s[3] = mins[1]; return { slots: s, status: 'ok' }; }   // sin almuerzo marcado
+    let choque = false;
+    for (const m of mins) {
+      const k = slotOf(m);
+      if (s[k] == null) s[k] = m;
+      else if (k === 3) s[k] = Math.max(s[k], m);   // salida: la última
+      else choque = true;                            // dos marcas en el mismo tramo: se usa la primera
+    }
+    return { slots: s, status: n > 4 || choque ? 'mas' : 'falta' };
+  }
+  function slotsStatus(s) {
+    const has = s.map(x => x != null);
+    if (!has[0] && !has[1] && !has[2] && !has[3]) return 'vacio';
+    if (has[0] && has[3] && has[1] === has[2]) {
+      for (let i = 1; i < 4; i++) if (s[i] != null) { let j = i - 1; while (s[j] == null) j--; if (s[i] <= s[j]) return 'orden'; }
+      return 'ok';
+    }
+    return 'falta';
+  }
+
+  // Período sugerido: desde el día siguiente al último cargado en la planilla (o el inicio del archivo)
+  // hasta el último día completo (si el archivo llega hasta hoy, hoy queda afuera porque todavía no hay salidas).
+  function suggestPeriod(st, log, mapping, hoyISO) {
+    let ultimo = null;
+    const cols = [...new Set(mapping.values())].map(p => st.blocks.find(b => b.pos === p).col);
+    for (let row = 4; row <= st.lastRow; row++) {
+      if (cols.some(c => [0, 1, 2, 3, 6].some(k => st._ht.value(row, c + k) != null))) ultimo = row;
+    }
+    const ultimoISO = ultimo ? serialToISO(st.base + ultimo - 3) : null;
+    let desde = log.minDate;
+    if (ultimoISO && ultimoISO >= log.minDate) desde = serialToISO(isoToSerial(ultimoISO) + 1);
+    let hasta = log.maxDate;
+    if (hoyISO && hasta >= hoyISO) hasta = serialToISO(isoToSerial(hoyISO) - 1);
+    // Si el reloj se bajó a mitad del día, el último día solo tiene entradas: queda afuera
+    let ultimaMarca = 0; for (const v of log.punches.values()) { const m = v.get(log.maxDate); if (m) ultimaMarca = Math.max(ultimaMarca, ...m); }
+    let parcial = false;
+    if (hasta === log.maxDate && ultimaMarca < 14 * 60 + 30 && log.minDate < log.maxDate) { hasta = serialToISO(isoToSerial(hasta) - 1); parcial = true; }
+    if (desde > hasta) desde = hasta;   // nada nuevo para cargar: igual se recalcula
+    return { desde, hasta, ultimoCargado: ultimoISO, parcial, nadaNuevo: !!(ultimoISO && ultimoISO >= hasta) };
+  }
+
+  function buildPlan(st, log, mapping, opts) {
+    const overwrite = !!(opts && opts.overwrite);
+    const desde = (opts && opts.desde) || log.minDate, hasta = (opts && opts.hasta) || log.maxDate;
+    const enRango = iso => iso >= desde && iso <= hasta;
+    const blockByPos = new Map(st.blocks.map(b => [b.pos, b]));
+    const days = [];
+    const issues = { sinLegajo: [], sinBloque: [], fueraDeRango: 0 };
+    const rosterSet = new Set(st.roster.map(r => r.legajo));
+    // Días hábiles del período en que el reloj no registró a nadie (equipo apagado o sin hora): no se marcan ausencias
+    const conMarcas = new Set(); for (const v of log.punches.values()) for (const k of v.keys()) conMarcas.add(k);
+    issues.diasSinReloj = [];
+    for (let iso = desde; iso <= hasta; iso = serialToISO(isoToSerial(iso) + 1))
+      if (!conMarcas.has(iso) && !st.noLaborables.has(iso)) issues.diasSinReloj.push(iso);
+    const sinReloj = new Set(issues.diasSinReloj);
+    issues.primerMarcaTardia = [];
+    const activos = new Set();
+    for (const [leg, byDay] of log.punches) {
+      const enPeriodo = [...byDay.keys()].filter(enRango).sort();
+      if (!enPeriodo.length) continue;                      // no fichó en el período elegido
+      activos.add(leg);
+      const pos = mapping.get(leg);
+      if (!pos) { (rosterSet.has(leg) ? issues.sinBloque : issues.sinLegajo).push(leg); continue; }
+      const b = blockByPos.get(pos);
+      for (const date of enPeriodo) {
+        const mins = byDay.get(date);
+        const row = st.dateToRow(date);
+        if (!row) { issues.fueraDeRango++; continue; }
+        const { slots, status } = toSlots(mins);
+        const already = [0, 1, 2, 3].some(k => st._ht.value(row, b.col + k) != null) || st._ht.value(row, b.col + 6) != null;
+        days.push({ legajo: leg, date, row, col: b.col, orig: mins.slice(), slots, status, skip: already && !overwrite, already });
+      }
+      if (isoToSerial(enPeriodo[0]) - isoToSerial(desde) > 7) issues.primerMarcaTardia.push({ legajo: leg, desde: enPeriodo[0] });
+      // Días hábiles del período sin ninguna marca: Ausente (para verificar)
+      for (let iso = desde; iso <= hasta; iso = serialToISO(isoToSerial(iso) + 1)) {
+        if (byDay.has(iso) || st.noLaborables.has(iso) || sinReloj.has(iso)) continue;
+        const row = st.dateToRow(iso); if (!row) continue;
+        const already = [0, 1, 2, 3].some(k => st._ht.value(row, b.col + k) != null) || st._ht.value(row, b.col + 6) != null;
+        days.push({ legajo: leg, date: iso, row, col: b.col, orig: [], slots: [null, null, null, null], status: 'ausente', absent: true, skip: already && !overwrite, already });
+      }
+    }
+    issues.sinMarcas = [...mapping.keys()].filter(l => !activos.has(l)).sort((a, b) => a - b);
+    issues.sinLegajo.sort((a, b) => a - b); issues.sinBloque.sort((a, b) => a - b);
+    return { days, issues, desde, hasta };
+  }
+
+  // Qué se escribe en E1 S1 E2 S2. La planilla suma (S1-E1)+(S2-E2), así que una marca suelta
+  // (entrada sin salida, o al revés) daría horas negativas o disparatadas: solo se escriben pares completos.
+  function pairsToWrite(slots) {
+    const [e, a, v, s] = slots;
+    if (e != null && a != null && v != null && s != null) return [e, a, v, s];
+    if (e != null && s != null) return [e, s, null, null];           // sin almuerzo o con una sola marca de almuerzo: de corrido
+    return [(e != null && a != null) ? e : null, (e != null && a != null) ? a : null, (v != null && s != null) ? v : null, (v != null && s != null) ? s : null];
+  }
+  // Marcas del día que no forman par y por eso no suman horas
+  function loosePunches(slots) {
+    const w = pairsToWrite(slots); const [e, a, v, s] = slots;
+    if (e != null && s != null) return [];
+    return slots.filter((x, i) => x != null && !w.includes(x));
+  }
+
+  // Escribe E1 S1 E2 S2 y Estado. Si no hay almuerzo marcado, entrada y salida van en E1 y S1 (como en la carga manual).
+  // No toca E3/S3, la fila 2, la hoja Legajos ni ninguna fórmula.
+  function applyPlan(wb, st, plan) {
+    let written = 0;
+    for (const d of plan.days) {
+      if (d.skip) continue;
+      const [e, a, v, s] = d.slots;
+      const cols = pairsToWrite(d.slots);
+      for (let k = 0; k < 4; k++) {
+        if (cols[k] != null) wb.ht.setNumber(d.row, d.col + k, cols[k] / 1440);
+        else wb.ht.clear(d.row, d.col + k);
+      }
+      const hasTimes = d.slots.some(x => x != null);
+      wb.ht.setText(d.row, d.col + 6, hasTimes ? st.presente : st.ausente);
+      written++;
+    }
+    return written;
+  }
+
+  // ---------- reporte en Word (.docx) ----------
+  // Convierte el documento en texto: un renglón por párrafo y las celdas de tabla separadas por tabulación
+  async function docxToText(zip, DOMParserImpl) {
+    const DP = DOMParserImpl || DOMParser;
+    const f = zip.file('word/document.xml'); if (!f) throw new Error('El archivo Word no tiene contenido legible.');
+    const doc = new DP().parseFromString(await f.async('string'), 'application/xml');
+    const lines = [];
+    const txt = el => { let out = ''; const w = el.getElementsByTagName('*'); for (let i = 0; i < w.length; i++) { const ln = w[i].localName || w[i].nodeName.replace(/^w:/, ''); if (ln === 't') out += w[i].textContent; else if (ln === 'tab') out += '\t'; } return out; };
+    const body = doc.getElementsByTagName('w:body')[0] || doc.documentElement;
+    const walk = el => {
+      for (let n = el.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType !== 1) continue;
+        const ln = n.localName || n.nodeName.replace(/^w:/, '');
+        if (ln === 'p') lines.push(txt(n));
+        else if (ln === 'tbl') { for (let r = n.firstChild; r; r = r.nextSibling) if (r.nodeType === 1 && (r.localName || r.nodeName).replace(/^w:/, '') === 'tr') { const cells = []; for (let c = r.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && (c.localName || c.nodeName).replace(/^w:/, '') === 'tc') cells.push(txt(c).trim()); lines.push(cells.join('\t')); } }
+        else walk(n);
+      }
+    };
+    walk(body);
+    return lines.join('\n');
+  }
+
+  // opts.asXlsx: guardar como .xlsx (cambia solo el tipo de contenido); si no, queda en su formato original
+  async function saveWorkbook(wb, XMLSerializerImpl, opts) {
+    const XS = XMLSerializerImpl || XMLSerializer;
+    const ser = new XS();
+    const asXlsx = !!(opts && opts.asXlsx);
+    // Que Excel recalcule las fórmulas al abrir (sus valores guardados son previos a la carga)
+    const calc = wb.wbXml.getElementsByTagName('calcPr')[0];
+    if (calc) { calc.setAttribute('fullCalcOnLoad', '1'); calc.removeAttribute('calcCompleted'); }
+    let ct = await wb.zip.file('[Content_Types].xml').async('string');
+    const macro = ct.includes('macroEnabled.main+xml');
+    if (asXlsx && macro) {
+      if (Object.keys(wb.zip.files).some(f => /vbaProject\.bin$/i.test(f))) throw new Error('La planilla tiene macros; guardala con la versión de escritorio de la app.');
+      ct = ct.replace('application/vnd.ms-excel.sheet.macroEnabled.main+xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml');
+      wb.zip.file('[Content_Types].xml', ct);
+    }
+    wb.zip.file('xl/workbook.xml', ser.serializeToString(wb.wbXml));
+    wb.zip.file(wb.sheetPath[SHEET_HT], ser.serializeToString(wb.ht.doc));
+    // Otras hojas recalculadas (por ejemplo Cálculo de Salario)
+    if (wb.extraDirty) for (const [path, doc] of wb.extraDirty) wb.zip.file(path, ser.serializeToString(doc));
+    const mime = (macro && !asXlsx) ? 'application/vnd.ms-excel.sheet.macroEnabled.12' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return wb.zip.generateAsync({ type: (typeof window !== 'undefined') ? 'blob' : 'nodebuffer', compression: 'DEFLATE', mimeType: mime });
+  }
+
+  function fmtMin(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+
+  const api = { pairsToWrite, loosePunches, Sheet, suggestPeriod, docxToText, toSlots, slotsStatus, parseAttlog, openWorkbook, readStructure, clearSheet, autoMapping, buildPlan, applyPlan, saveWorkbook, fmtMin, serialToISO, isoToSerial };
+  // readStructure necesita acceso a la hoja para buildPlan
+  const _rs = readStructure; api.readStructure = wb => { const st = _rs(wb); st._ht = wb.ht; return st; };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Fichadas = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+// Motor de fórmulas: recalcula dentro de la app las hojas que dependen de los horarios
+// (Horas Trabajadas: Presentismo y TOTAL; Cálculo de Salario completo) y guarda los
+// resultados en el Excel, para que se vean aunque el programa que lo abra no recalcule.
+(function (root) {
+  const F = (typeof module !== 'undefined' && module.exports) ? require('./core.js') : root.Fichadas;
+  const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+
+  class XErr { constructor(e) { this.e = e; } toString() { return this.e; } }
+  const NA = new XErr('#N/A'), VALUE = new XErr('#VALUE!'), DIV0 = new XErr('#DIV/0!'), REFE = new XErr('#REF!'), NUM = new XErr('#NUM!');
+  const ERRS = { '#N/A': NA, '#VALUE!': VALUE, '#DIV/0!': DIV0, '#REF!': REFE, '#NUM!': NUM, '#NAME?': new XErr('#NAME?'), '#NULL!': new XErr('#NULL!') };
+  class Unsupported extends Error {}
+  const isErr = v => v instanceof XErr;
+
+  // ---------- utilidades ----------
+  const colToNum = s => { let n = 0; for (const ch of s) n = n * 26 + (ch.charCodeAt(0) - 64); return n; };
+  const kids = (el, name) => { const out = []; for (let n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 1 && (n.localName || n.nodeName) === name) out.push(n); return out; };
+  const EPOCH = Date.UTC(1899, 11, 30);
+  const toDate = s => new Date(EPOCH + Math.floor(s) * 86400000);
+  const fromYMD = (y, m, d) => Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 86400000);
+
+  // ---------- lectura de fórmulas ----------
+  function tokenize(s) {
+    const out = []; let i = 0; const n = s.length;
+    while (i < n) {
+      const ch = s[i];
+      if (ch === ' ' || ch === '\n' || ch === '\r' || ch === '\t') { i++; continue; }
+      if (ch === '"') {
+        let j = i + 1, v = '';
+        while (j < n) { if (s[j] === '"') { if (s[j + 1] === '"') { v += '"'; j += 2; continue; } break; } v += s[j++]; }
+        out.push({ k: 'str', v }); i = j + 1; continue;
+      }
+      let sheet = null, m;
+      if (ch === "'") {
+        let j = i + 1, v = '';
+        while (j < n) { if (s[j] === "'") { if (s[j + 1] === "'") { v += "'"; j += 2; continue; } break; } v += s[j++]; }
+        if (s[j + 1] !== '!') throw new Unsupported('comilla');
+        sheet = v; i = j + 2;
+      } else if ((m = /^([A-Za-z_][A-Za-z0-9_.]*)!/.exec(s.slice(i)))) { sheet = m[1]; i += m[0].length; }
+      const rest = s.slice(i);
+      if ((m = /^(\$?)([A-Z]{1,3})(\$?)(\d+)(?::(\$?)([A-Z]{1,3})(\$?)(\d+))?(?![A-Za-z0-9_(\[])/.exec(rest))) {
+        const node = { t: 'ref', sheet, kind: 'area', ac1: !!m[1], c1: colToNum(m[2]), ar1: !!m[3], r1: +m[4] };
+        if (m[6]) { node.ac2 = !!m[5]; node.c2 = colToNum(m[6]); node.ar2 = !!m[7]; node.r2 = +m[8]; }
+        else { node.ac2 = node.ac1; node.c2 = node.c1; node.ar2 = node.ar1; node.r2 = node.r1; node.single = true; }
+        out.push({ k: 'ref', node }); i += m[0].length; continue;
+      }
+      if ((m = /^(\$?)([A-Z]{1,3}):(\$?)([A-Z]{1,3})(?![A-Za-z0-9_(])/.exec(rest))) {
+        out.push({ k: 'ref', node: { t: 'ref', sheet, kind: 'cols', ac1: !!m[1], c1: colToNum(m[2]), ac2: !!m[3], c2: colToNum(m[4]), ar1: true, ar2: true, r1: 1, r2: Infinity } });
+        i += m[0].length; continue;
+      }
+      if ((m = /^(\$?)(\d+):(\$?)(\d+)/.exec(rest))) {
+        out.push({ k: 'ref', node: { t: 'ref', sheet, kind: 'rows', ar1: !!m[1], r1: +m[2], ar2: !!m[3], r2: +m[4], ac1: true, ac2: true, c1: 1, c2: Infinity } });
+        i += m[0].length; continue;
+      }
+      if (sheet) throw new Unsupported('referencia');
+      if ((m = /^(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?/.exec(rest))) { out.push({ k: 'num', v: Number(m[0]) }); i += m[0].length; continue; }
+      if ((m = /^[A-Za-z_][A-Za-z0-9_.]*/.exec(rest))) {
+        const id = m[0]; const nx = s[i + id.length];
+        if (nx === '(') { out.push({ k: 'fn', v: id.replace(/^_xlfn\./, '').toUpperCase() }); i += id.length + 1; continue; }
+        if (/^(TRUE|FALSE)$/i.test(id)) { out.push({ k: 'bool', v: /^TRUE$/i.test(id) }); i += id.length; continue; }
+        if (nx === '[') {      // referencia estructurada a una tabla: Tabla[Columna], Tabla[[Col ]], Tabla[[#This Row],[Col]]
+          let j = i + id.length, depth = 0, body = '';
+          for (; j < n; j++) {
+            const c2 = s[j];
+            if (c2 === "'" && j + 1 < n) { body += c2 + s[j + 1]; j++; continue; }
+            if (c2 === '[') { depth++; if (depth === 1) continue; }
+            else if (c2 === ']') { depth--; if (depth === 0) { j++; break; } }
+            body += c2;
+          }
+          const items = []; let k2 = 0;
+          if (body.startsWith('[')) { const re = /\[((?:'.|[^\]])*)\]/g; let mm; while ((mm = re.exec(body))) items.push(mm[1]); }
+          else if (body !== '') items.push(body);
+          const clean = x => x.replace(/'(.)/g, '$1');
+          const node = { t: 'sref', table: id, thisRow: false, col: null, all: items.length === 0 };
+          for (const it of items) { if (/^#this row$/i.test(it)) node.thisRow = true; else if (/^#data$/i.test(it)) {} else if (/^#/.test(it)) throw new Unsupported('tabla ' + it); else node.col = clean(it); }
+          out.push({ k: 'ref', node }); i = j; continue;
+        }
+        throw new Unsupported('nombre ' + id);
+      }
+      const two = s.substr(i, 2);
+      if (two === '<>' || two === '<=' || two === '>=') { out.push({ k: 'op', v: two }); i += 2; continue; }
+      if ('+-*/^&=<>,()%'.includes(ch)) { out.push({ k: 'op', v: ch }); i++; continue; }
+      throw new Unsupported('carácter ' + ch);
+    }
+    return out;
+  }
+
+  const PREC = { '=': 1, '<>': 1, '<': 1, '>': 1, '<=': 1, '>=': 1, '&': 2, '+': 3, '-': 3, '*': 4, '/': 4, '^': 5 };
+  function parseFormula(text) {
+    const toks = tokenize(text); let p = 0;
+    const peek = () => toks[p];
+    const isOp = (t, v) => t && t.k === 'op' && t.v === v;
+    const expect = v => { if (!isOp(toks[p], v)) throw new Unsupported('se esperaba ' + v); p++; };
+    function primary() {
+      const t = toks[p++]; if (!t) throw new Unsupported('fin');
+      let node;
+      if (t.k === 'num') node = { t: 'num', v: t.v };
+      else if (t.k === 'str') node = { t: 'str', v: t.v };
+      else if (t.k === 'bool') node = { t: 'bool', v: t.v };
+      else if (t.k === 'ref') node = t.node;
+      else if (isOp(t, '-')) return { t: 'neg', a: primary() };
+      else if (isOp(t, '+')) return primary();
+      else if (isOp(t, '(')) { node = expr(0); expect(')'); }
+      else if (t.k === 'fn') {
+        const args = [];
+        if (!isOp(peek(), ')')) {
+          for (;;) {
+            if (isOp(peek(), ',') || isOp(peek(), ')')) args.push({ t: 'missing' }); else args.push(expr(0));
+            if (isOp(peek(), ',')) { p++; continue; }
+            break;
+          }
+        }
+        expect(')'); node = { t: 'fn', name: t.v, args };
+      } else throw new Unsupported('símbolo');
+      while (isOp(peek(), '%')) { p++; node = { t: 'pct', a: node }; }
+      return node;
+    }
+    function expr(minp) {
+      let left = primary();
+      for (;;) {
+        const t = peek(); if (!t || t.k !== 'op') break;
+        const pr = PREC[t.v]; if (pr === undefined || pr <= minp) break;
+        p++; left = { t: 'bin', op: t.v, a: left, b: expr(pr) };
+      }
+      return left;
+    }
+    const ast = expr(0);
+    if (p !== toks.length) throw new Unsupported('sobran símbolos');
+    return ast;
+  }
+
+  // ---------- valores ----------
+  function toNum(v) {
+    if (isErr(v)) return v;
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'boolean') return v ? 1 : 0;
+    if (typeof v === 'string') {
+      const t = v.trim(); if (t !== '' && !isNaN(+t)) return +t;
+      const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
+      if (m) { const d = +m[1], mo = +m[2], y = +m[3]; const dt = new Date(Date.UTC(y, mo - 1, d)); if (mo >= 1 && mo <= 12 && dt.getUTCMonth() === mo - 1) return fromYMD(y, mo, d); }
+      return VALUE;
+    }
+    return VALUE;
+  }
+  function toStr(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(+v.toPrecision(15));
+    if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+    return String(v);
+  }
+  function toBool(v) {
+    if (isErr(v)) return v;
+    if (v === null || v === undefined) return false;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'number') return v !== 0;
+    if (typeof v === 'string') { if (/^true$/i.test(v)) return true; if (/^false$/i.test(v)) return false; return VALUE; }
+    return VALUE;
+  }
+  // Orden de Excel: números < texto < lógicos; texto sin distinguir mayúsculas
+  function cmp(a, b) {
+    if (a === null || a === undefined) a = (typeof b === 'string') ? '' : (typeof b === 'boolean' ? false : 0);
+    if (b === null || b === undefined) b = (typeof a === 'string') ? '' : (typeof a === 'boolean' ? false : 0);
+    const rank = v => typeof v === 'number' ? 0 : typeof v === 'string' ? 1 : 2;
+    const ra = rank(a), rb = rank(b);
+    if (ra !== rb) return ra - rb;
+    if (ra === 1) { const x = a.toLowerCase(), y = b.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; }
+    if (ra === 2) return (a ? 1 : 0) - (b ? 1 : 0);
+    const x = +a.toPrecision(15), y = +b.toPrecision(15);   // Excel compara con 15 cifras significativas
+    return x < y ? -1 : x > y ? 1 : 0;
+  }
+  const keyOf = v => {
+    if (v === null || v === undefined) return null;
+    if (typeof v === 'number') return 'n:' + (+v.toPrecision(15));
+    if (typeof v === 'string') return 's:' + v.toLowerCase();
+    if (typeof v === 'boolean') return 'b:' + v;
+    return null;
+  };
+
+  // Criterio de COUNTIF/COUNTIFS: "OK", "", ">="&fecha, "<>x", con comodines * y ?
+  function criterion(cr) {
+    let op = '=', val = cr;
+    if (typeof cr === 'string') { const m = /^(<=|>=|<>|<|>|=)?([\s\S]*)$/.exec(cr); op = m[1] || '='; val = m[2]; }
+    let num = typeof val === 'number' ? val : (typeof val === 'string' && val.trim() !== '' && !isNaN(+val) ? +val : null);
+    if (typeof val === 'boolean') num = null;
+    if (op === '=' || op === '<>') {
+      let test;
+      if (typeof val === 'boolean') test = v => v === val;
+      else if (num !== null) test = v => typeof v === 'number' && +v.toPrecision(15) === +num.toPrecision(15) || (typeof v === 'string' && v.trim() !== '' && +v === num);
+      else if (val === '') test = v => v === null || v === undefined || v === '';
+      else if (/[*?]/.test(val)) { const re = new RegExp('^' + val.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/~\*/g, '\u0001').replace(/\*/g, '.*').replace(/\?/g, '.').replace(/\u0001/g, '\\*') + '$', 'is'); test = v => typeof v === 'string' && re.test(v); }
+      else { const lv = String(val).toLowerCase(); test = v => typeof v === 'string' && v.toLowerCase() === lv; }
+      return op === '=' ? test : (v => !test(v));
+    }
+    if (num !== null) return v => typeof v === 'number' && (op === '<' ? v < num : op === '>' ? v > num : op === '<=' ? v <= num : v >= num);
+    const lv = String(val).toLowerCase();
+    return v => typeof v === 'string' && (op === '<' ? v.toLowerCase() < lv : op === '>' ? v.toLowerCase() > lv : op === '<=' ? v.toLowerCase() <= lv : v.toLowerCase() >= lv);
+  }
+
+  class Range { constructor(sheet, r1, c1, r2, c2) { Object.assign(this, { sheet, r1, c1, r2, c2 }); } }
+
+  // ---------- motor ----------
+  class Engine {
+    constructor(wb, DP) {
+      this.wb = wb; this.DP = DP || (typeof DOMParser !== 'undefined' ? DOMParser : null);
+      this.sheets = new Map(); this.memo = new Map(); this.inprog = new Set();
+      this.recompute = () => false; this.index = new Map(); this.astCache = new Map();
+      this.computed = []; this.fallbacks = []; this.dirty = new Set(); this.tables = new Map();
+    }
+    async load(names) {
+      for (const name of names) {
+        if (this.sheets.has(name)) continue;
+        let sh = null;
+        if (name === 'Horas Trabajadas') sh = this.wb.ht;
+        else if (name === 'Legajos') sh = this.wb.leg;
+        else if (name === 'Feriados y dias No laborables' && this.wb.fer) sh = this.wb.fer;
+        else {
+          const path = this.wb.sheetPath[name]; if (!path) continue;
+          const doc = new this.DP().parseFromString(await this.wb.zip.file(path).async('string'), 'application/xml');
+          sh = new F.Sheet(doc, this.wb.ss);
+        }
+        // fórmulas compartidas: la celda "maestra" tiene el texto, las demás solo el número de grupo
+        sh.shared = new Map();
+        sh.maxRow = 0; sh.maxCol = 0;
+        for (const [r, rowEl] of sh.rows) {
+          if (r > sh.maxRow) sh.maxRow = r;
+          for (const c of kids(rowEl, 'c')) {
+            const ref = c.getAttribute('r'); const m = /^([A-Z]+)(\d+)$/.exec(ref); const col = colToNum(m[1]);
+            if (col > sh.maxCol) sh.maxCol = col;
+            const f = kids(c, 'f')[0];
+            if (f && f.getAttribute('t') === 'shared' && f.textContent && f.getAttribute('ref')) sh.shared.set(f.getAttribute('si'), { text: f.textContent, row: +m[2], col });
+          }
+        }
+        sh.name = name;
+        this.sheets.set(name, sh);
+        // tablas de la hoja (para referencias como PresentismoDiario[Fecha])
+        const path = this.wb.sheetPath[name];
+        if (path) {
+          const relPath = path.replace(/([^/]+)$/, '_rels/$1.rels'); const rf = this.wb.zip.file(relPath);
+          if (rf) {
+            const rd = new this.DP().parseFromString(await rf.async('string'), 'application/xml');
+            const rs = rd.getElementsByTagName('Relationship');
+            for (let i = 0; i < rs.length; i++) {
+              if (!/\/table$/.test(rs[i].getAttribute('Type') || '')) continue;
+              const tp = ('xl/' + path.replace(/^xl\//, '').replace(/[^/]+$/, '') + rs[i].getAttribute('Target')).replace(/[^/]+\/\.\.\//g, '');
+              const tf = this.wb.zip.file(tp); if (!tf) continue;
+              const td = new this.DP().parseFromString(await tf.async('string'), 'application/xml').documentElement;
+              const ref = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(td.getAttribute('ref') || ''); if (!ref) continue;
+              const cols = []; const tc = td.getElementsByTagName('tableColumn'); for (let j = 0; j < tc.length; j++) cols.push(tc[j].getAttribute('name'));
+              const hdr = td.hasAttribute('headerRowCount') ? +td.getAttribute('headerRowCount') : 1, tot = td.hasAttribute('totalsRowCount') ? +td.getAttribute('totalsRowCount') : 0;
+              this.tables.set(td.getAttribute('name').toLowerCase(), { sheet: name, r1: +ref[2] + hdr, r2: +ref[4] - tot, c1: colToNum(ref[1]), cols });
+            }
+          }
+        }
+      }
+    }
+    sheet(name) { return this.sheets.get(name) || null; }
+
+    raw(sh, row, col) {
+      const c = sh.cell(row, col); if (!c) return null;
+      if (c.getAttribute('t') === 'e') { const v = kids(c, 'v')[0]; return ERRS[v ? v.textContent : '#N/A'] || new XErr(v ? v.textContent : '#N/A'); }
+      return sh.value(row, col);
+    }
+    formulaOf(sh, row, col) {
+      const c = sh.cell(row, col); if (!c) return null;
+      const f = kids(c, 'f')[0]; if (!f) return null;
+      const t = f.getAttribute('t');
+      if (t === 'array' || t === 'dataTable') return { unsupported: true };
+      if (t === 'shared' && !(f.textContent && f.getAttribute('ref'))) {
+        const m = sh.shared.get(f.getAttribute('si')); if (!m) return { unsupported: true };
+        return { key: sh.name + '|S|' + f.getAttribute('si'), text: m.text, dr: row - m.row, dc: col - m.col };
+      }
+      if (t === 'shared') { const m = sh.shared.get(f.getAttribute('si')); return { key: sh.name + '|S|' + f.getAttribute('si'), text: f.textContent, dr: row - m.row, dc: col - m.col }; }
+      return { key: sh.name + '|' + row + '|' + col, text: f.textContent, dr: 0, dc: 0 };
+    }
+    ast(fm) {
+      if (this.astCache.has(fm.key)) return this.astCache.get(fm.key);
+      let a; try { a = parseFormula(fm.text); } catch (e) { if (e instanceof Unsupported) a = { t: 'unsup', why: e.message }; else throw e; }
+      this.astCache.set(fm.key, a); return a;
+    }
+
+    get(sheetName, row, col) {
+      const key = sheetName + '|' + row + '|' + col;
+      if (this.memo.has(key)) return this.memo.get(key);
+      const sh = this.sheets.get(sheetName); if (!sh) throw new Unsupported('hoja ' + sheetName);
+      if (this.recompute(sheetName, row, col)) {
+        const fm = this.formulaOf(sh, row, col);
+        if (fm) {
+          if (this.inprog.has(key)) return this.raw(sh, row, col);   // referencia circular: se usa lo guardado
+          this.inprog.add(key);
+          let v;
+          try {
+            if (fm.unsupported) throw new Unsupported('tipo de fórmula');
+            const ast = this.ast(fm); if (ast.t === 'unsup') throw new Unsupported(ast.why);
+            v = this.ev(ast, { sheet: sheetName, dr: fm.dr, dc: fm.dc, row, col });
+            if (v instanceof Range) v = this.deref(v);
+            if (v === null || v === undefined) v = 0;   // en Excel, =A1 con A1 vacía da 0
+            this.computed.push([sheetName, row, col]);
+          } catch (e) {
+            if (!(e instanceof Unsupported)) throw e;
+            v = this.raw(sh, row, col); this.fallbacks.push([sheetName, row, col, e.message]);
+          } finally { this.inprog.delete(key); }
+          this.memo.set(key, v); return v;
+        }
+      }
+      const v = this.raw(sh, row, col); this.memo.set(key, v); return v;
+    }
+    deref(rg) { if (rg.r1 === rg.r2 && rg.c1 === rg.c2) return this.get(rg.sheet, rg.r1, rg.c1); throw new Unsupported('rango como valor'); }
+    clampR(rg) { const sh = this.sheets.get(rg.sheet); return Math.min(rg.r2, sh ? sh.maxRow : 0); }
+    clampC(rg) { const sh = this.sheets.get(rg.sheet); return Math.min(rg.c2, sh ? sh.maxCol : 0); }
+
+    resolve(node, ctx) {
+      const sheet = node.sheet || ctx.sheet;
+      if (!this.sheets.has(sheet)) throw new Unsupported('hoja ' + sheet);
+      const r1 = node.ar1 ? node.r1 : node.r1 + ctx.dr, r2 = node.ar2 ? node.r2 : node.r2 + ctx.dr;
+      const c1 = node.ac1 ? node.c1 : node.c1 + ctx.dc, c2 = node.ac2 ? node.c2 : node.c2 + ctx.dc;
+      if (r1 < 1 || c1 < 1) return REFE;
+      return new Range(sheet, Math.min(r1, r2), Math.min(c1, c2), Math.max(r1, r2), Math.max(c1, c2));
+    }
+    // índice para búsquedas exactas (VLOOKUP / MATCH) sobre una columna o fila
+    lookupIndex(sheet, fixed, a, b, byRow) {
+      const k = sheet + '|' + (byRow ? 'R' : 'C') + fixed + '|' + a + '|' + b;
+      let m = this.index.get(k); if (m) return m;
+      m = new Map();
+      for (let i = a; i <= b; i++) {
+        const v = byRow ? this.get(sheet, fixed, i) : this.get(sheet, i, fixed);
+        const kk = keyOf(v); if (kk !== null && !m.has(kk)) m.set(kk, i);
+      }
+      this.index.set(k, m); return m;
+    }
+    vals(arg, ctx, out) {          // aplana argumentos (rangos y valores) para SUM/AVERAGE/MIN/MAX
+      const v = this.ev(arg, ctx, true);
+      if (v instanceof Range) {
+        const r2 = this.clampR(v), c2 = this.clampC(v);
+        for (let r = v.r1; r <= r2; r++) for (let c = v.c1; c <= c2; c++) { const x = this.get(v.sheet, r, c); if (isErr(x)) throw x; if (typeof x === 'number') out.push(x); }
+      } else { if (isErr(v)) throw v; if (v !== null && v !== undefined) { const n = toNum(v); if (isErr(n)) throw n; out.push(n); } }
+      return out;
+    }
+
+    ev(node, ctx, wantRef) {
+      switch (node.t) {
+        case 'num': case 'str': case 'bool': return node.v;
+        case 'missing': return null;
+        case 'unsup': throw new Unsupported(node.why);
+        case 'ref': { const rg = this.resolve(node, ctx); if (isErr(rg)) return rg; if (wantRef) return rg; return (rg.r1 === rg.r2 && rg.c1 === rg.c2) ? this.get(rg.sheet, rg.r1, rg.c1) : rg; }
+        case 'sref': {
+          const t = this.tables.get(node.table.toLowerCase()); if (!t) throw new Unsupported('tabla ' + node.table);
+          let c1 = t.c1, c2 = t.c1 + t.cols.length - 1;
+          if (node.col !== null) {
+            let i = t.cols.indexOf(node.col);
+            if (i < 0) i = t.cols.findIndex(x => x.toLowerCase() === node.col.toLowerCase());
+            if (i < 0) i = t.cols.findIndex(x => x.trim().toLowerCase() === node.col.trim().toLowerCase());
+            if (i < 0) return REFE; c1 = c2 = t.c1 + i;
+          }
+          let r1 = t.r1, r2 = t.r2;
+          if (node.thisRow) { if (ctx.sheet !== t.sheet || ctx.row < t.r1 || ctx.row > t.r2) return VALUE; r1 = r2 = ctx.row; }
+          const rg = new Range(t.sheet, r1, c1, r2, c2);
+          if (wantRef) return rg;
+          if (r1 === r2 && c1 === c2) return this.get(t.sheet, r1, c1);
+          if (c1 === c2 && ctx.sheet === t.sheet && ctx.row >= r1 && ctx.row <= r2) return this.get(t.sheet, ctx.row, c1);   // Tabla[Col] en una celda: toma la fila actual
+          return rg;
+        }
+        case 'neg': { const v = toNum(this.scalar(node.a, ctx)); return isErr(v) ? v : -v; }
+        case 'pct': { const v = toNum(this.scalar(node.a, ctx)); return isErr(v) ? v : v / 100; }
+        case 'bin': {
+          const a = this.scalar(node.a, ctx), b = this.scalar(node.b, ctx);
+          if (isErr(a)) return a; if (isErr(b)) return b;
+          switch (node.op) {
+            case '&': return toStr(a) + toStr(b);
+            case '=': return cmp(a, b) === 0; case '<>': return cmp(a, b) !== 0;
+            case '<': return cmp(a, b) < 0; case '>': return cmp(a, b) > 0;
+            case '<=': return cmp(a, b) <= 0; case '>=': return cmp(a, b) >= 0;
+          }
+          const x = toNum(a), y = toNum(b); if (isErr(x)) return x; if (isErr(y)) return y;
+          switch (node.op) {
+            case '+': return x + y; case '-': return x - y; case '*': return x * y;
+            case '/': return y === 0 ? DIV0 : x / y; case '^': return Math.pow(x, y);
+          }
+          throw new Unsupported('operador');
+        }
+        case 'fn': return this.fn(node, ctx, wantRef);
+      }
+      throw new Unsupported('nodo');
+    }
+    scalar(node, ctx) { const v = this.ev(node, ctx); return (v instanceof Range) ? this.deref(v) : v; }
+
+    fn(node, ctx, wantRef) {
+      const A = node.args, S = i => this.scalar(A[i], ctx), N = i => toNum(S(i));
+      switch (node.name) {
+        case 'IF': { const c = toBool(S(0)); if (isErr(c)) return c; if (c) return A.length > 1 ? this.ev(A[1], ctx, wantRef) : true; return A.length > 2 ? this.ev(A[2], ctx, wantRef) : false; }
+        case 'IFERROR': { let v; try { v = this.scalar(A[0], ctx); } catch (e) { if (e instanceof XErr) v = e; else throw e; } return isErr(v) ? this.scalar(A[1], ctx) : v; }
+        case 'AND': case 'OR': {
+          let res = node.name === 'AND';
+          for (let i = 0; i < A.length; i++) { const b = toBool(S(i)); if (isErr(b)) return b; if (node.name === 'AND') res = res && b; else res = res || b; }
+          return res;
+        }
+        case 'NOT': { const b = toBool(S(0)); return isErr(b) ? b : !b; }
+        case 'ISNUMBER': { const v = S(0); return typeof v === 'number'; }
+        case 'ISERROR': { const v = S(0); return isErr(v); }
+        case 'INT': { const v = N(0); return isErr(v) ? v : Math.floor(v); }
+        case 'ABS': { const v = N(0); return isErr(v) ? v : Math.abs(v); }
+        case 'ROUND': { const v = N(0), d = A.length > 1 ? N(1) : 0; if (isErr(v)) return v; const f = Math.pow(10, d); return Math.round(v * f + (v >= 0 ? 1e-9 : -1e-9)) / f; }
+        case 'SUM': { try { let s = 0; for (const a of A) for (const x of this.vals(a, ctx, [])) s += x; return s; } catch (e) { if (e instanceof XErr) return e; throw e; } }
+        case 'AVERAGE': { try { const xs = []; for (const a of A) this.vals(a, ctx, xs); return xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : DIV0; } catch (e) { if (e instanceof XErr) return e; throw e; } }
+        case 'MIN': case 'MAX': { try { const xs = []; for (const a of A) this.vals(a, ctx, xs); return xs.length ? (node.name === 'MIN' ? Math.min(...xs) : Math.max(...xs)) : 0; } catch (e) { if (e instanceof XErr) return e; throw e; } }
+        case 'COUNT': { let n = 0; for (const a of A) { const v = this.ev(a, ctx, true); if (v instanceof Range) { const r2 = this.clampR(v), c2 = this.clampC(v); for (let r = v.r1; r <= r2; r++) for (let c = v.c1; c <= c2; c++) if (typeof this.get(v.sheet, r, c) === 'number') n++; } else if (typeof v === 'number') n++; } return n; }
+        case 'COUNTIF': case 'COUNTIFS': {
+          const pairs = [];
+          for (let i = 0; i + 1 < A.length; i += 2) { const rg = this.ev(A[i], ctx, true); if (!(rg instanceof Range)) return VALUE; const cr = S(i + 1); if (isErr(cr)) return cr; pairs.push([rg, criterion(cr)]); }
+          if (!pairs.length) return VALUE;
+          const base = pairs[0][0], h = this.clampR(base) - base.r1, w = this.clampC(base) - base.c1;
+          let n = 0;
+          for (let dr = 0; dr <= h; dr++) for (let dc = 0; dc <= w; dc++) {
+            let ok = true;
+            for (const [rg, test] of pairs) { if (!test(this.get(rg.sheet, rg.r1 + dr, rg.c1 + dc))) { ok = false; break; } }
+            if (ok) n++;
+          }
+          return n;
+        }
+        case 'CONCATENATE': { let s = ''; for (let i = 0; i < A.length; i++) { const v = S(i); if (isErr(v)) return v; s += toStr(v); } return s; }
+        case 'MONTH': case 'YEAR': case 'DAY': { const v = N(0); if (isErr(v)) return v; const d = toDate(v); return node.name === 'MONTH' ? d.getUTCMonth() + 1 : node.name === 'YEAR' ? d.getUTCFullYear() : d.getUTCDate(); }
+        case 'DATE': { const y = N(0), m = N(1), d = N(2); if (isErr(y) || isErr(m) || isErr(d)) return VALUE; return Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 86400000); }
+        case 'WEEKNUM': {
+          const v = N(0); if (isErr(v)) return v; if (A.length > 1 && N(1) !== 1) throw new Unsupported('WEEKNUM tipo');
+          const d = toDate(v); const y = d.getUTCFullYear(); const jan1 = fromYMD(y, 1, 1); const dow = toDate(jan1).getUTCDay();
+          return Math.floor((Math.floor(v) - jan1 + dow) / 7) + 1;
+        }
+        case 'DATEVALUE': {   // planilla en español: día/mes/año
+          const s = S(0); if (isErr(s)) return s;
+          const m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(toStr(s)); if (!m) return VALUE;
+          const d = +m[1], mo = +m[2], y = +m[3]; if (mo < 1 || mo > 12 || d < 1) return VALUE;
+          const dt = new Date(Date.UTC(y, mo - 1, d)); if (dt.getUTCMonth() !== mo - 1) return VALUE;
+          return fromYMD(y, mo, d);
+        }
+        case 'VLOOKUP': {
+          const v = S(0); if (isErr(v)) return v;
+          const rg = this.ev(A[1], ctx, true); if (isErr(rg)) return rg; if (!(rg instanceof Range)) return NA;
+          const idx = N(2); if (isErr(idx)) return idx;
+          if (A.length > 3 && A[3].t !== 'missing') { const ap = toBool(S(3)); if (ap === true) throw new Unsupported('VLOOKUP aproximado'); } else throw new Unsupported('VLOOKUP aproximado');
+          if (idx < 1) return VALUE; if (rg.c2 !== Infinity && idx > rg.c2 - rg.c1 + 1) return REFE;
+          const k = keyOf(v); if (k === null) return NA;
+          const row = this.lookupIndex(rg.sheet, rg.c1, rg.r1, this.clampR(rg), false).get(k);
+          return row === undefined ? NA : this.get(rg.sheet, row, rg.c1 + Math.floor(idx) - 1);
+        }
+        case 'MATCH': {
+          const v = S(0); if (isErr(v)) return v;
+          const rg = this.ev(A[1], ctx, true); if (!(rg instanceof Range)) return NA;
+          if (A.length < 3 || N(2) !== 0) throw new Unsupported('MATCH aproximado');
+          const k = keyOf(v); if (k === null) return NA;
+          let pos;
+          if (rg.r1 === rg.r2) { const i = this.lookupIndex(rg.sheet, rg.r1, rg.c1, this.clampC(rg), true).get(k); pos = i === undefined ? undefined : i - rg.c1 + 1; }
+          else if (rg.c1 === rg.c2) { const i = this.lookupIndex(rg.sheet, rg.c1, rg.r1, this.clampR(rg), false).get(k); pos = i === undefined ? undefined : i - rg.r1 + 1; }
+          else return NA;
+          return pos === undefined ? NA : pos;
+        }
+        case 'INDEX': {
+          const rg = this.ev(A[0], ctx, true); if (!(rg instanceof Range)) return REFE;
+          const r = N(1), c = A.length > 2 ? N(2) : 1; if (isErr(r)) return r; if (isErr(c)) return c;
+          return this.get(rg.sheet, rg.r1 + r - 1, rg.c1 + c - 1);
+        }
+        case 'OFFSET': {
+          const base = this.ev(A[0], ctx, true); if (!(base instanceof Range)) return VALUE;
+          const r = N(1), c = N(2); if (isErr(r)) return r; if (isErr(c)) return c;
+          const h = A.length > 3 && A[3].t !== 'missing' ? N(3) : base.r2 - base.r1 + 1, w = A.length > 4 && A[4].t !== 'missing' ? N(4) : base.c2 - base.c1 + 1;
+          if (isErr(h) || isErr(w)) return VALUE;
+          const r1 = base.r1 + r, c1 = base.c1 + c; if (r1 < 1 || c1 < 1) return REFE;
+          const rg = new Range(base.sheet, r1, c1, r1 + h - 1, c1 + w - 1);
+          return wantRef ? rg : ((h === 1 && w === 1) ? this.get(rg.sheet, r1, c1) : rg);
+        }
+      }
+      throw new Unsupported('función ' + node.name);
+    }
+
+    // Recalcula en orden (fila por fila) las celdas elegidas y devuelve cuántas
+    run(list) { for (const [s, r, c] of list) this.get(s, r, c); }
+
+    // Guarda los resultados en las celdas (sin tocar las fórmulas)
+    writeBack() {
+      let n = 0;
+      for (const [sheetName, row, col] of this.computed) {
+        const sh = this.sheets.get(sheetName); const c = sh.cell(row, col); if (!c) continue;
+        const v = this.memo.get(sheetName + '|' + row + '|' + col);
+        let vEl = kids(c, 'v')[0];
+        for (const is of kids(c, 'is')) c.removeChild(is);
+        if (!vEl) { vEl = sh.doc.createElementNS(NS, 'v'); c.appendChild(vEl); }
+        if (isErr(v)) { c.setAttribute('t', 'e'); vEl.textContent = v.e; }
+        else if (typeof v === 'number') { if (!isFinite(v)) { c.setAttribute('t', 'e'); vEl.textContent = '#NUM!'; } else { c.removeAttribute('t'); vEl.textContent = String(Object.is(v, -0) ? 0 : v); } }
+        else if (typeof v === 'boolean') { c.setAttribute('t', 'b'); vEl.textContent = v ? '1' : '0'; }
+        else if (v === null || v === undefined) { c.removeAttribute('t'); vEl.textContent = '0'; }
+        else { c.setAttribute('t', 'str'); vEl.textContent = String(v); }
+        this.dirty.add(sheetName); n++;
+      }
+      return n;
+    }
+  }
+
+  // ---------- hojas de sueldo ----------
+  const SH_HT = 'Horas Trabajadas', SH_CS = 'Calculo de Salario ', SH_PP = 'Presentismo y Productividad', SH_LEG = 'Legajos', SH_FER = 'Feriados y dias No laborables';
+
+  function findSheetName(wb, wanted) {
+    if (wb.sheetPath[wanted]) return wanted;
+    const k = Object.keys(wb.sheetPath).find(n => n.trim().toLowerCase() === wanted.trim().toLowerCase());
+    return k || null;
+  }
+
+  // Recalcula TOTAL/Presentismo de Horas Trabajadas y toda la hoja Cálculo de Salario
+  async function recalcPayroll(wb, st, DP) {
+    const E = new Engine(wb, DP);
+    const cs = findSheetName(wb, SH_CS), pp = findSheetName(wb, SH_PP);
+    if (!cs) throw new Error('No encontré la hoja "Calculo de Salario".');
+    await E.load([SH_HT, SH_LEG, SH_FER, cs].concat(pp ? [pp] : []));
+    const ht = E.sheet(SH_HT), csS = E.sheet(cs);
+    const firstCol = st.blocks.length ? st.blocks[0].col : 4, lastCol = st.blocks.length ? st.blocks[st.blocks.length - 1].col + 8 : 0;
+    const htCols = new Set(); for (const b of st.blocks) { htCols.add(b.col + 7); htCols.add(b.col + 8); }
+    E.recompute = (s, r, c) => (s === SH_HT && r >= 4 && (htCols.has(c) || c > lastCol)) || s === cs || (pp && s === pp);
+    const t0 = Date.now();
+    const order = [];
+    for (let r = 4; r <= st.lastRow; r++) {
+      for (const c of htCols) if (ht.cell(r, c)) order.push([SH_HT, r, c]);
+      for (let c = lastCol + 1; c <= ht.maxCol; c++) if (ht.cell(r, c)) order.push([SH_HT, r, c]);
+    }
+    const rows = [...csS.rows.keys()].sort((a, b) => a - b);
+    for (const r of rows) for (const c of kids(csS.rows.get(r), 'c')) if (kids(c, 'f').length) order.push([cs, r, colToNum(/^[A-Z]+/.exec(c.getAttribute('r'))[0])]);
+    if (pp) { const ppS = E.sheet(pp); for (const r of [...ppS.rows.keys()].sort((a, b) => a - b)) for (const c of kids(ppS.rows.get(r), 'c')) if (kids(c, 'f').length) order.push([pp, r, colToNum(/^[A-Z]+/.exec(c.getAttribute('r'))[0])]); }
+    E.run(order);
+    const written = E.writeBack();
+    return { engine: E, csName: cs, ppName: pp, written, fallbacks: E.fallbacks, ms: Date.now() - t0 };
+  }
+
+  // Semanas de la hoja Cálculo de Salario (vie → jue; se cobran el viernes siguiente)
+  function payrollWeeks(E, cs) {
+    const S = E.sheet(cs); const weeks = [];
+    const rows = [...S.rows.keys()].sort((a, b) => a - b);
+    const hdr = rows.filter(r => String(E.get(cs, r, 7) || '').trim() === 'Total (dia)');
+    for (let i = 0; i < hdr.length; i++) {
+      const h = hdr[i], end = i + 1 < hdr.length ? hdr[i + 1] : (S.maxRow + 1);
+      const days = []; for (let k = 0; k < 7; k++) days.push(E.get(cs, h, 4 + 6 * k));
+      if (typeof days[0] !== 'number') continue;
+      const emp = [];
+      let totalRow = null;
+      for (let r = h + 3; r < end; r++) {
+        const fm = E.formulaOf(S, r, 49);
+        if (fm && /^SUM\(/i.test(fm.text) && !totalRow && E.get(cs, r, 49) !== null && emp.length) { totalRow = r; break; }
+        const b = E.get(cs, r, 2); if (b === null || b === '' || !E.formulaOf(S, r, 3)) continue;
+        const g = c => E.get(cs, r, c);
+        const dayData = [];
+        for (let k = 0; k < 7; k++) dayData.push({ horas: g(3 + 6 * k), ajN: g(4 + 6 * k), ajX: g(5 + 6 * k), obs: g(6 + 6 * k), norm: g(7 + 6 * k), extra: g(8 + 6 * k) });
+        emp.push({ row: r, clave: b, nombre: g(48), dias: dayData, normales: g(49), extras: g(50), valorHora: g(51), totalHoras: g(52), saldoAnterior: g(53), extrasPesos: g(54), adelantos: g(55), premios: g(56), aPagar: g(57), pagado: g(58), saldo: g(59) });
+      }
+      weeks.push({ header: h, desde: days[0], hasta: days[6], pago: days[6] + 1, empleados: emp, totalRow });
+    }
+    return weeks;
+  }
+
+  // Presentismo semanal según la regla de la hoja Presentismo y Productividad:
+  // OK si en la semana hay menos de 2 "NOK dia" y ningún "NOK Semana"
+  function presentismoSemana(E, st, blockPos, desde, hasta) {
+    const b = st.blocks.find(x => x.pos === blockPos); if (!b) return null;
+    let ok = 0, nokDia = 0, nokSem = 0, dias = 0;
+    for (let d = desde; d <= hasta; d++) {
+      const row = st.dateToRow(F.serialToISO(d)); if (!row) continue;
+      const v = String(E.get(SH_HT, row, b.col + 7) ?? '').trim().toLowerCase();
+      if (!v) continue; dias++;
+      if (v === 'ok') ok++; else if (v === 'nok dia') nokDia++; else if (v === 'nok semana') nokSem++;
+    }
+    return { dias, ok, nokDia, nokSem, premio: dias ? (nokDia < 2 && nokSem === 0) : null };
+  }
+
+  const api = { Engine, parseFormula, recalcPayroll, payrollWeeks, presentismoSemana, XErr, isErr, SH_CS, SH_HT };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Sueldos = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  const F = window.Fichadas;
+  const $ = id => document.getElementById(id);
+  const S = { datText: null, datName: '', xlsBuf: null, xlsName: '', log: null, st: null, map: null, plan: null, roster: new Map(), ver: 0, gen: null, genTimer: null, week: null };
+  const P = window.Sueldos;
+  // Horario en 24 horas con am/pm aclarado: 07:03 am, 18:31 pm
+  const ap = m => F.fmtMin(m) + (m < 720 ? ' am' : ' pm');
+  // Acepta 18:31, 1831, 18.31, "18:31 pm", "6:31 pm", "7:03 am"
+  function parseHM(v) {
+    const x = /^(\d{1,2})[:.]?(\d{2})\s*([ap])?\.?\s*m?\.?$/i.exec(v.trim()); if (!x) return null;
+    let h = +x[1]; const mi = +x[2], suf = (x[3] || '').toLowerCase();
+    if (h > 23 || mi > 59) return null;
+    if (suf === 'p' && h < 12) h += 12;
+    if (suf === 'a' && h === 12) h = 0;
+    if (suf === 'a' && h > 12) return null;
+    return h * 60 + mi;
+  }
+  const money = v => typeof v === 'number' ? '$ ' + Math.round(v).toLocaleString('es-AR') : (v == null ? '—' : String(v));
+  const hs = v => typeof v === 'number' ? (Math.round(v * 100) / 100).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : (v == null ? '' : String(v));
+  const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  let downloads = null;
+  if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { downloads = d; }).catch(() => {});
+
+  function colName(n) { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+  function setMsg(el, text, cls) { el.textContent = text || ''; el.className = 'msg' + (cls ? ' ' + cls : ''); }
+  function baseName(n) { return n.replace(/\.(xlsm|xlsx)$/i, ''); }
+  function dayLabel(iso) { const [y, m, d] = iso.split('-').map(Number); const w = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); return `${DAYS[w]} ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`; }
+
+  // ---------- entrada de archivos ----------
+  function wireDrop(dropId, inputId, onFile) {
+    const drop = $(dropId), inp = $(inputId);
+    inp.addEventListener('change', () => inp.files[0] && onFile(inp.files[0]));
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) onFile(f); });
+  }
+  wireDrop('dropDat', 'fDat', async f => {
+    if (/\.docx$/i.test(f.name)) {
+      try { S.datText = await F.docxToText(await JSZip.loadAsync(await f.arrayBuffer())); }
+      catch (e) { setMsg($('msg1'), 'No pude leer el Word: ' + e.message, 'err'); return; }
+    } else if (/\.doc$/i.test(f.name)) { setMsg($('msg1'), 'Ese es un Word viejo (.doc). Abrilo en Word y guardalo como .docx, o subí directamente el .dat del reloj.', 'err'); return; }
+    else S.datText = await f.text(); S.datName = f.name; $('nDat').textContent = f.name; $('dropDat').classList.add('done'); process();
+  });
+  wireDrop('dropXls', 'fXls', async f => {
+    S.xlsBuf = await f.arrayBuffer(); S.xlsName = f.name; $('nXls').textContent = f.name; $('dropXls').classList.add('done'); process();
+  });
+
+  async function openWb() { const zip = await JSZip.loadAsync(S.xlsBuf.slice(0)); const wb = await F.openWorkbook(zip); const st = F.readStructure(wb); return { wb, st }; }
+
+  // ---------- proceso ----------
+  async function process() {
+    setMsg($('msg1'), '');
+    if (!S.xlsBuf) return;
+    try {
+      const { st } = await openWb(); S.st = st;
+      S.roster = new Map(st.roster.map(r => [r.legajo, r]));
+      if (!S.datText) { setMsg($('msg1'), `Planilla leída: ${st.blocks.length} bloques en Horas Trabajadas, ${st.roster.length} legajos. Falta el archivo del reloj.`, 'ok'); return; }
+      S.log = F.parseAttlog(S.datText);
+      if (!S.log.punches.size) { setMsg($('msg1'), 'No encontré marcas en el archivo. Cada renglón tiene que tener legajo, fecha y hora (por ejemplo: 1002  2026-08-03 08:03:17).', 'err'); return; }
+      S.map = F.autoMapping(st);
+      const now = new Date(); const hoy = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const per = F.suggestPeriod(st, S.log, S.map, hoy);
+      S.per = per;
+      for (const id of ['pDesde', 'pHasta']) { $(id).min = S.log.minDate; $(id).max = S.log.maxDate; }
+      $('pDesde').value = per.desde; $('pHasta').value = per.hasta;
+      let note = `El archivo del reloj trae marcas del ${dayLabel(S.log.minDate)} al ${dayLabel(S.log.maxDate)}.`;
+      note += per.ultimoCargado ? ` La planilla ya tiene cargado hasta el ${dayLabel(per.ultimoCargado)}, así que se propone seguir desde el día siguiente.` : '';
+      if (S.log.maxDate >= hoy) note += ' Hoy queda afuera porque todavía no hay salidas.';
+      if (per.parcial) note += ` El ${dayLabel(S.log.maxDate)} queda afuera: el reloj se bajó ese día a la mañana y solo tiene entradas.`;
+      if (per.nadaNuevo) note += ' No hay días nuevos para cargar; los sueldos se recalculan con lo que ya tiene la planilla.';
+      $('periodNote').textContent = note + ' Podés cambiar las fechas.';
+      rebuildPlan();
+      ['s2', 's3', 's4', 's5'].forEach(id => $(id).hidden = false);
+      setMsg($('msg4'), '');
+    } catch (e) { console.error(e); setMsg($('msg1'), 'No pude leer la planilla: ' + e.message, 'err'); }
+  }
+
+  function rebuildPlan() {
+    const prev = new Map((S.plan ? S.plan.days : []).filter(d => d.edited).map(d => [d.legajo + '|' + d.date, d]));
+    S.plan = F.buildPlan(S.st, S.log, S.map, { overwrite: $('optOver').checked, desde: $('pDesde').value, hasta: $('pHasta').value });
+    for (const d of S.plan.days) {
+      const p = prev.get(d.legajo + '|' + d.date);
+      if (p) { d.slots = p.slots; d.edited = true; d.status = F.slotsStatus(d.slots); }
+    }
+    renderStats(); renderMap(); renderNotes(); renderFilter(); renderReview();
+    scheduleGen();
+  }
+
+  function renderStats() {
+    const L = S.log, days = S.plan.days;
+    const pend = days.filter(d => d.status !== 'ok' && !d.absent && !d.skip).length;
+    const aus = days.filter(d => d.absent && !d.skip && !d.slots.some(x => x != null)).length;
+    $('stats').innerHTML = '';
+    const items = [['Período', `${dayLabel(S.plan.desde)} al ${dayLabel(S.plan.hasta)}`], ['Empleados', new Set(days.filter(d => !d.skip).map(d => d.legajo)).size], ['Días cargados', days.filter(d => !d.skip).length], ['Con alguna marca faltante', pend], ['Ausencias', aus]];
+    for (const [k, v] of items) { const s = document.createElement('span'); s.append(k + ': '); const b = document.createElement('b'); b.textContent = v; s.append(b); $('stats').append(s); }
+  }
+
+  function renderMap() {
+    const body = $('mapBody'); body.innerHTML = '';
+    const legs = [...S.log.punches.keys()].filter(l => S.map.has(l)).sort((a, b) => a - b);
+    for (const leg of legs) {
+      const r = S.roster.get(leg) || { nombre: '' }; const days = S.plan.days.filter(d => d.legajo === leg);
+      const tr = document.createElement('tr');
+      const td = (t, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t; tr.append(c); return c; };
+      td(leg, 'num'); td(r.nombre);
+      td(S.log.punches.get(leg).size, 'num');
+      const inc = days.filter(d => d.status !== 'ok' && !d.absent).length;
+      const c = td(''); const pill = document.createElement('span'); pill.className = 'pill ' + (inc ? 'warn' : 'ok'); pill.textContent = inc ? inc : '0'; c.append(pill);
+      const au = days.filter(d => d.absent).length;
+      const c2 = td(''); const p2 = document.createElement('span'); p2.className = 'pill ' + (au ? 'bad' : 'ok'); p2.textContent = au; c2.append(p2);
+      const b = S.st.blocks.find(x => x.pos === S.map.get(leg));
+      td(b ? `Bloque ${b.pos} · ${colName(b.col)}–${colName(b.col + 8)}` : '—', 'mono');
+      body.append(tr);
+    }
+  }
+
+  function renderNotes() {
+    const n = $('notes'); n.innerHTML = '';
+    const add = (cls, html) => { const d = document.createElement('div'); d.className = 'note ' + cls; d.innerHTML = html; n.append(d); };
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const I = S.plan.issues;
+    if (I.sinLegajo.length) add('bad', `<b>Fichan pero no están en la planilla:</b> <span class="mono">${I.sinLegajo.join(', ')}</span>. No figuran en Legajos ni tienen bloque, así que sus marcas no se cargan.`);
+    if (I.sinBloque.length) add('warn', `<b>Están en Legajos pero no tienen bloque en Horas Trabajadas:</b> <span class="mono">${I.sinBloque.join(', ')}</span>. Sus marcas no se cargan. Si tienen que liquidarse, poné su legajo en la fila 2 de un bloque libre y volvé a subir la planilla.`);
+    const fd = iso => dayLabel(iso);
+    if (I.diasSinReloj && I.diasSinReloj.length) add('warn', `<b>El reloj no registró ninguna marca el ${I.diasSinReloj.map(fd).join(', ')}.</b> Esos días no se cargan ni se marcan ausencias: completalos a mano.`);
+    if (I.primerMarcaTardia && I.primerMarcaTardia.length) add('warn', `<b>Empiezan a fichar recién avanzado el período:</b> ${I.primerMarcaTardia.map(x => `<span class="mono">${x.legajo}</span> desde el ${fd(x.desde)}`).join(', ')}. Los días anteriores salen como ausencia; verificá si ya trabajaban y todavía no estaban cargados en el reloj.`);
+    if (I.sinMarcas && I.sinMarcas.length) add('info', `<b>Tienen bloque pero no ficharon en todo el período:</b> <span class="mono">${I.sinMarcas.join(', ')}</span>. No se les carga nada.`);
+    if (I.fueraDeRango) add('warn', `<b>${I.fueraDeRango} días quedan fuera del año de la planilla</b> y no se cargan.`);
+    const skipped = S.plan.days.filter(d => d.skip).length;
+    if (skipped) add('info', `<b>${skipped} días ya tienen horarios en la planilla</b> y se dejan como están. Para reemplazarlos, activá la opción en "Detalle por empleado y opciones".`);
+    for (const d of (S.map.duplicados || [])) add('warn', `<b>El legajo ${d.legajo} aparece en más de un bloque.</b> Se carga en el primero (bloque ${S.map.get(d.legajo)}); el bloque ${d.pos} queda sin tocar.`);
+  }
+
+  function renderFilter() {
+    const sel = $('fltLeg'); const cur = sel.value; sel.length = 1;
+    const legs = [...new Set(S.plan.days.map(d => d.legajo))].sort((a, b) => a - b);
+    for (const l of legs) { const o = document.createElement('option'); o.value = l; o.textContent = `${l} · ${S.roster.get(l)?.nombre || ''}`; sel.append(o); }
+    sel.value = legs.includes(+cur) ? cur : '';
+  }
+
+  function renderReview() {
+    const body = $('revBody'); body.innerHTML = '';
+    const leg = $('fltLeg').value, pendOnly = $('fltPend').checked;
+    let rows = S.plan.days.filter(d => !d.skip && (!leg || d.legajo === +leg) && (!pendOnly || d.status !== 'ok' || d.edited));
+    rows.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.legajo - b.legajo);
+    const pend = S.plan.days.filter(d => !d.skip && d.status !== 'ok').length;
+    $('revCount').textContent = pend ? `${pend} días pendientes` : 'Sin días pendientes';
+    if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 9; td.className = 'empty'; td.textContent = pendOnly ? 'No hay días incompletos con este filtro.' : 'No hay días para mostrar.'; tr.append(td); body.append(tr); return; }
+    const MAX = 400;
+    for (const d of rows.slice(0, MAX)) {
+      const tr = document.createElement('tr');
+      const td = (t, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t; tr.append(c); return c; };
+      td(dayLabel(d.date), 'mono'); td(d.legajo, 'num'); td(S.roster.get(d.legajo)?.nombre || '');
+      td(d.orig.map(ap).join('  '), 'mono');
+      const LBL = ['Entrada', 'Salida almuerzo', 'Vuelta almuerzo', 'Salida'];
+      const inputs = d.slots.map((m, k) => {
+        const c = td(''); const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'hm'; inp.id = `t-${d.legajo}-${d.date}-${k}`;
+        inp.value = m == null ? '' : ap(m); inp.placeholder = '--:--';
+        inp.setAttribute('aria-label', `${LBL[k]} ${d.legajo} ${d.date}`); c.append(inp); return inp;
+      });
+      const stc = td(''); const pill = document.createElement('span'); stc.append(pill);
+      const paint = () => {
+        const map = { ok: ['ok', d.edited ? 'Corregido' : 'Completo'], falta: ['warn', 'Falta marca'], mas: ['warn', 'Marcas de más'], orden: ['bad', 'Horarios desordenados'], vacio: ['bad', 'Ausente'], ausente: ['bad', 'Ausente · verificar'], error: ['bad', 'Formato inválido'] };
+        const [c, t] = map[d.uiStatus || d.status]; pill.className = 'pill ' + c; pill.textContent = t;
+        const lunch = d.slots[1] != null || d.slots[2] != null; const none = !d.slots.some(x => x != null);
+        inputs.forEach((inp, k) => inp.classList.toggle('miss', !none && d.status !== 'ok' && d.slots[k] == null && (k === 0 || k === 3 || lunch)));
+      };
+      inputs.forEach((inp, k) => inp.addEventListener('change', () => {
+        const v = inp.value.trim();
+        let m = null;
+        if (v) { m = parseHM(v); if (m === null) { inp.classList.add('bad'); d.uiStatus = 'error'; paint(); return; } }
+        inp.classList.remove('bad'); d.slots = d.slots.slice(); d.slots[k] = m; d.edited = true;
+        d.uiStatus = inputs.some(i => i.classList.contains('bad')) ? 'error' : null; d.status = F.slotsStatus(d.slots); if (d.absent && d.status === 'vacio') d.status = 'ausente';
+        inp.value = m == null ? '' : ap(m); paint();
+        const p = S.plan.days.filter(x => !x.skip && x.status !== 'ok').length; $('revCount').textContent = p ? `${p} días pendientes` : 'Sin días pendientes';
+        renderStats(); scheduleGen();
+      }));
+      paint(); body.append(tr);
+    }
+    if (rows.length > MAX) { const tr = document.createElement('tr'); const c = document.createElement('td'); c.colSpan = 9; c.className = 'empty'; c.textContent = `Se muestran ${MAX} de ${rows.length}. Filtrá por legajo para ver el resto.`; tr.append(c); body.append(tr); }
+  }
+  $('fltLeg').addEventListener('change', renderReview);
+  $('fltPend').addEventListener('change', renderReview);
+  $('optOver').addEventListener('change', rebuildPlan);
+  for (const id of ['pDesde', 'pHasta']) $(id).addEventListener('change', () => {
+    if (!$('pDesde').value || !$('pHasta').value) return;
+    if ($('pDesde').value > $('pHasta').value) { setMsg($('msg4'), 'La fecha "desde" tiene que ser anterior o igual a "hasta".', 'err'); return; }
+    setMsg($('msg4'), ''); rebuildPlan();
+  });
+
+  // ---------- sueldos: cargar horarios en una copia y recalcular las hojas ----------
+  function scheduleGen() {
+    S.ver++; clearTimeout(S.genTimer);
+    $('payBody').innerHTML = ''; $('payFoot').innerHTML = ''; $('payTiles').innerHTML = ''; $('payNotes').innerHTML = '';
+    $('wkInfo').textContent = 'Calculando sueldos…';
+    S.genTimer = setTimeout(() => generate().catch(e => { console.error(e); $('wkInfo').textContent = 'No pude calcular los sueldos: ' + e.message; }), 350);
+  }
+  async function generate() {
+    const ver = S.ver;
+    if (S.gen && S.gen.ver === ver) return S.gen;
+    await new Promise(r => setTimeout(r, 20));
+    const edits = new Map(S.plan.days.map(d => [d.legajo + '|' + d.date, d.slots]));
+    const { wb, st } = await openWb();
+    const plan = F.buildPlan(st, S.log, S.map, { overwrite: $('optOver').checked, desde: $('pDesde').value, hasta: $('pHasta').value });
+    for (const d of plan.days) { const m = edits.get(d.legajo + '|' + d.date); if (m) d.slots = m; }
+    const n = F.applyPlan(wb, st, plan);
+    const R = await P.recalcPayroll(wb, st);
+    wb.extraDirty = new Map(); for (const name of R.engine.dirty) if (name !== 'Horas Trabajadas') wb.extraDirty.set(wb.sheetPath[name], R.engine.sheet(name).doc);
+    const weeks = P.payrollWeeks(R.engine, R.csName);
+    const g = { ver, wb, st, plan, n, R, weeks };
+    if (ver === S.ver) { S.gen = g; renderPay(); }
+    return g;
+  }
+
+  function renderPay() {
+    const g = S.gen; if (!g) return;
+    const sel = $('wkSel'); const prevSel = sel.value;
+    const hasta = F.isoToSerial(g.plan.hasta), desde = F.isoToSerial(g.plan.desde);
+    const opts = g.weeks.filter(w => w.desde <= hasta && w.hasta >= desde - 35);
+    sel.innerHTML = '';
+    for (const w of opts) {
+      const o = document.createElement('option'); o.value = w.header;
+      o.textContent = `${dayLabel(F.serialToISO(w.desde))} al ${dayLabel(F.serialToISO(w.hasta))} · cobro ${dayLabel(F.serialToISO(w.pago))}`;
+      sel.append(o);
+    }
+    let pick = opts.find(w => String(w.header) === prevSel);
+    if (!pick) pick = [...opts].reverse().find(w => w.hasta <= hasta) || opts[opts.length - 1];
+    if (!pick) { $('wkInfo').textContent = 'No hay semanas de la hoja Cálculo de Salario en este período.'; return; }
+    sel.value = pick.header; S.week = pick.header;
+    drawWeek(g, pick);
+  }
+  $('wkSel').addEventListener('change', () => { const g = S.gen; if (!g) return; const w = g.weeks.find(x => String(x.header) === $('wkSel').value); if (w) drawWeek(g, w); });
+
+  function drawWeek(g, w) {
+    const E = g.R.engine, st = g.st;
+    // la hoja busca el bloque por el nombre de la columna B en Legajos (sin distinguir mayúsculas)
+    const legNames = new Map(); for (const [n] of g.wb.leg.rows) { const b = g.wb.leg.value(n, 2), c = g.wb.leg.value(n, 3); if (typeof b === 'string' && typeof c === 'number') legNames.set(b.toLowerCase(), c); }
+    const days = []; for (let k = 0; k < 7; k++) days.push(F.serialToISO(w.desde + k));
+    const head = $('payHead'); head.innerHTML = '';
+    const hr = document.createElement('tr');
+    const th = (t, cls, sub) => { const c = document.createElement('th'); if (cls) c.className = cls; c.append(t); if (sub) { const s = document.createElement('span'); s.className = 'd'; s.textContent = sub; c.append(s); } hr.append(c); };
+    th('Empleado', 'name');
+    for (const d of days) { const lbl = dayLabel(d); th(lbl.split(' ')[0], 'n', lbl.split(' ')[1]); }
+    ['Hs normales', 'Hs extra', 'Valor hora', 'Total horas', 'Saldo anterior', 'Extras', 'Adelantos', 'Premios', 'A pagar'].forEach(t => th(t, 'n'));
+    th('Presentismo');
+    head.append(hr);
+    const body = $('payBody'); body.innerHTML = '';
+    const tot = { norm: 0, ext: 0, horas: 0, saldo: 0, extras: 0, adel: 0, prem: 0, pagar: 0 };
+    const negativos = []; let activos = 0;
+    for (const e of w.empleados) {
+      const tr = document.createElement('tr');
+      const num = v => typeof v === 'number' ? v : 0;
+      const idle = !num(e.valorHora) && !num(e.aPagar) && e.dias.every(d => !num(d.horas));
+      if (idle) tr.className = 'idle'; else activos++;
+      const td = (t, cls, title) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t; if (title) c.title = title; tr.append(c); return c; };
+      td(String(e.nombre || e.clave).trim(), 'name', e.clave && String(e.clave).trim() !== String(e.nombre).trim() ? `Fila de la hoja: ${String(e.clave).trim()}` : '');
+      e.dias.forEach((d, k) => {
+        const h = d.horas;
+        const c = td('', 'day');
+        if (P.isErr(h)) { c.textContent = '#'; c.className = 'day neg'; c.title = 'La hoja no encuentra este empleado en Legajos'; return; }
+        if (!num(h)) { c.textContent = '–'; c.classList.add('zero'); return; }
+        c.textContent = hs(h);
+        if (h < 0) { c.classList.add('neg'); c.title = 'Faltan marcas: con una sola entrada o salida el total del día queda negativo'; negativos.push(`${String(e.nombre).trim()} (${dayLabel(days[k])})`); }
+        else if (num(d.extra) > 0) { const x = document.createElement('span'); x.className = 'x'; x.textContent = num(d.norm) > 0 ? `+${hs(d.extra)}` : 'ext'; c.append(x); c.title = `${hs(d.norm)} normales + ${hs(d.extra)} extra`; }
+      });
+      td(hs(e.normales), 'n'); td(hs(e.extras), 'n'); td(money(e.valorHora), 'n'); td(money(e.totalHoras), 'n');
+      td(money(e.saldoAnterior), 'n'); td(money(e.extrasPesos), 'n'); td(money(e.adelantos), 'n'); td(money(e.premios), 'n');
+      td(money(e.aPagar), 'n pagar');
+      const pc = td('');
+      const orden = legNames.get(String(e.clave).toLowerCase());
+      const pr = orden ? P.presentismoSemana(E, st, orden, w.desde, w.hasta) : null;
+      if (pr && pr.premio !== null && !idle) {
+        const pill = document.createElement('span'); pill.className = 'pill ' + (pr.premio ? 'ok' : 'bad'); pill.textContent = pr.premio ? 'OK' : 'NOK';
+        pill.title = `${pr.ok} días OK · ${pr.nokDia} con llegada tarde o salida temprana · ${pr.nokSem} que hacen perder la semana`;
+        pc.append(pill);
+      }
+      tot.norm += num(e.normales); tot.ext += num(e.extras); tot.horas += num(e.totalHoras); tot.saldo += num(e.saldoAnterior);
+      tot.extras += num(e.extrasPesos); tot.adel += num(e.adelantos); tot.prem += num(e.premios); tot.pagar += num(e.aPagar);
+      body.append(tr);
+    }
+    const foot = $('payFoot'); foot.innerHTML = '';
+    const fr = document.createElement('tr'); const ftd = (t, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t; fr.append(c); };
+    ftd('Total', 'name'); for (let k = 0; k < 7; k++) ftd('');
+    ftd(hs(tot.norm), 'n'); ftd(hs(tot.ext), 'n'); ftd(''); ftd(money(tot.horas), 'n'); ftd(money(tot.saldo), 'n'); ftd(money(tot.extras), 'n'); ftd(money(tot.adel), 'n'); ftd(money(tot.prem), 'n'); ftd(money(tot.pagar), 'n pagar'); ftd('');
+    foot.append(fr);
+    // resumen
+    const tiles = $('payTiles'); tiles.innerHTML = '';
+    const tile = (k, v, main) => { const d = document.createElement('div'); d.className = 'tile' + (main ? ' main' : ''); const a = document.createElement('span'); a.className = 'k'; a.textContent = k; const b = document.createElement('span'); b.className = 'v'; b.textContent = v; d.append(a, b); tiles.append(d); };
+    tile('A pagar el ' + dayLabel(F.serialToISO(w.pago)), money(tot.pagar), true);
+    tile('Horas de la semana', money(tot.horas));
+    tile('Saldo anterior', money(tot.saldo));
+    tile('Empleados con horas', String(activos));
+    $('wkInfo').textContent = `Planilla recalculada (${g.R.written.toLocaleString('es-AR')} celdas)`;
+    // avisos
+    const notes = $('payNotes'); notes.innerHTML = '';
+    const add = (cls, html) => { const d = document.createElement('div'); d.className = 'note ' + cls; d.innerHTML = html; notes.append(d); };
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const lunch = g.plan.days.filter(d => !d.skip && F.isoToSerial(d.date) >= w.desde && F.isoToSerial(d.date) <= w.hasta && d.slots[0] != null && d.slots[3] != null && ((d.slots[1] == null) !== (d.slots[2] == null)));
+    if (lunch.length) add('warn', `<b>${lunch.length} jornadas con una sola marca de almuerzo</b> (${lunch.slice(0, 8).map(d => esc((S.roster.get(d.legajo)?.nombre || d.legajo) + ' ' + dayLabel(d.date))).join(', ')}${lunch.length > 8 ? '…' : ''}). Puede que el empleado haya salido a almorzar y no haya fichado una de las dos marcas. Revisalas caso por caso en "Revisar o corregir días": si completás la marca que falta se descuenta el almuerzo; si las dejás así, se pagan de corrido de entrada a salida.`);
+    const sueltas = g.plan.days.filter(d => !d.skip && F.isoToSerial(d.date) >= w.desde && F.isoToSerial(d.date) <= w.hasta && F.loosePunches(d.slots).length);
+    if (sueltas.length) add('bad', `<b>${sueltas.length} jornadas tienen una marca sin su par y esas horas no se pagan:</b> ${sueltas.map(d => esc(`${S.roster.get(d.legajo)?.nombre || d.legajo} ${dayLabel(d.date)} (${F.loosePunches(d.slots).map(ap).join(', ')})`)).join(' · ')}. Completá la entrada o salida que falta en "Revisar o corregir días"; el cálculo se actualiza solo.`);
+    if (negativos.length) add('bad', `<b>${negativos.length} jornadas ya cargadas en la planilla dan horas negativas</b> porque tienen una sola marca: ${negativos.map(esc).join(', ')}. Corregilas en el Excel o volvé a cargarlas con "Reemplazar".`);
+    const prev = g.weeks[g.weeks.indexOf(w) - 1];
+    if (prev) {
+      const sinPagar = prev.empleados.filter(e => typeof e.aPagar === 'number' && Math.abs(e.aPagar) > 1000 && !(typeof e.pagado === 'number' && e.pagado));
+      if (sinPagar.length) add('warn', `<b>La semana anterior (cobro ${dayLabel(F.serialToISO(prev.pago))}) no tiene cargado lo pagado</b> en ${sinPagar.length} empleados (${sinPagar.slice(0, 6).map(e => esc(String(e.nombre).trim())).join(', ')}${sinPagar.length > 6 ? '…' : ''}). Por eso el saldo anterior arrastra ese importe completo. Cargá la columna "Pagado" de esa semana en el Excel.`);
+    }
+    const sinValor = w.empleados.filter(e => e.dias.some(d => typeof d.horas === 'number' && d.horas > 0) && !(typeof e.valorHora === 'number' && e.valorHora > 0));
+    if (sinValor.length) add('warn', `<b>Tienen horas pero no tienen valor hora:</b> ${sinValor.map(e => esc(String(e.nombre).trim())).join(', ')}. No cobran nada hasta que se cargue el valor en la hoja.`);
+  }
+
+  // ---------- salida ----------
+  // En claude.ai el archivo se entrega como .xlsx (es el formato que permite la descarga);
+  // abriendo esta página desde la computadora se guarda en el formato original (.xlsm).
+  async function offer(wb, name, msgEl) {
+    if (downloads) {
+      const blob = await F.saveWorkbook(wb, null, { asXlsx: true });
+      try { await downloads.save({ filename: name + '.xlsx', data: blob }); setMsg(msgEl, 'Planilla guardada: ' + name + '.xlsx', 'ok'); return true; }
+      catch (e) { setMsg(msgEl, e && e.code === 'declined' ? 'Descarga cancelada.' : 'No se pudo guardar: ' + (e && e.message || e), e && e.code === 'declined' ? '' : 'err'); return false; }
+    }
+    const ext = (S.xlsName.match(/\.(xlsm|xlsx)$/i) || ['', 'xlsm'])[1].toLowerCase();
+    const blob = await F.saveWorkbook(wb, null, { asXlsx: ext === 'xlsx' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.' + ext;
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    setMsg(msgEl, 'Planilla descargada: ' + name + '.' + ext, 'ok'); return true;
+  }
+
+  $('btnGo').addEventListener('click', async () => {
+    const btn = $('btnGo'); btn.disabled = true; setMsg($('msg4'), 'Generando…');
+    try {
+      const bad = S.plan.days.find(d => d.uiStatus === 'error');
+      if (bad) { setMsg($('msg4'), `Hay un horario con formato inválido (legajo ${bad.legajo}, ${dayLabel(bad.date)}). Usá el formato HH:MM, por ejemplo 18:31.`, 'err'); return; }
+      clearTimeout(S.genTimer);
+      const g = await generate();
+      const ok = await offer(g.wb, `${baseName(S.xlsName)} - fichadas ${g.plan.desde} a ${g.plan.hasta}`, $('msg4'));
+      if (ok) $('msg4').textContent += ` · ${g.n} días cargados · sueldos recalculados`;
+    } catch (e) { console.error(e); setMsg($('msg4'), 'Error al generar: ' + e.message, 'err'); }
+    finally { btn.disabled = false; }
+  });
+
+})();
+</script>
+
+</body>
+</html>

@@ -119,6 +119,11 @@ details.step p { margin: 0 }
 .pay tfoot td { font-weight: 600; border-top: 1.5px solid var(--ink); border-bottom: 0 }
 .pay th .d { display: block; font-family: var(--f-mono); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 11px }
 .busy { color: var(--muted); font-size: 14px }
+.manual { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end }
+.manual label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600 }
+.manual input[type=date] { font: inherit; font-family: var(--f-mono); font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px }
+.manual select { max-width: 240px }
+button.link { background: transparent; border: 0; color: var(--bad); padding: 2px 6px; font-weight: 500 }
 .msg.ok { color: var(--ok) }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important } }
 </style>
@@ -157,6 +162,25 @@ details.step p { margin: 0 }
     <div class="stats" id="stats"></div>
     <div class="row"><button id="btnGo" class="big">Descargar planilla completa</button><span class="msg" id="msg4"></span></div>
     <div class="notes" id="notes"></div>
+  </section>
+
+  <section class="step" id="s6" hidden>
+    <div class="step-h"><h2>Cargar horarios a mano</h2>
+      <span class="hint">Para quien trabajó y no fichó, o cuando falló el reloj. Lo que cargues acá entra en la planilla y en el cálculo, y reemplaza lo que haya ese día para ese legajo.</span></div>
+    <form class="manual" id="mForm" autocomplete="off">
+      <label>Legajo<select id="mLeg"></select></label>
+      <label>Fecha<input type="date" id="mFecha"></label>
+      <label>Entrada<input type="text" class="hm" id="mE" placeholder="07:00"></label>
+      <label>Sal. almuerzo<input type="text" class="hm" id="mA" placeholder="opcional"></label>
+      <label>Vuelta<input type="text" class="hm" id="mV" placeholder="opcional"></label>
+      <label>Salida<input type="text" class="hm" id="mS" placeholder="18:30"></label>
+      <button type="submit" id="mAdd">Agregar</button>
+    </form>
+    <div class="msg" id="mMsg"></div>
+    <div class="tbl-wrap" id="mWrap" hidden><table>
+      <thead><tr><th>Fecha</th><th>Legajo</th><th>Nombre</th><th>Entrada</th><th>Sal. almuerzo</th><th>Vuelta</th><th>Salida</th><th></th></tr></thead>
+      <tbody id="mBody"></tbody>
+    </table></div>
   </section>
 
   <section class="step" id="s5" hidden>
@@ -1236,18 +1260,78 @@ details.step p { margin: 0 }
       if (per.nadaNuevo) note += ' No hay días nuevos para cargar; los sueldos se recalculan con lo que ya tiene la planilla.';
       $('periodNote').textContent = note + ' Podés cambiar las fechas.';
       rebuildPlan();
-      ['s2', 's3', 's4', 's5'].forEach(id => $(id).hidden = false);
+      ['s2', 's3', 's4', 's5', 's6'].forEach(id => $(id).hidden = false);
+      fillManualLegajos();
       setMsg($('msg4'), '');
     } catch (e) { console.error(e); setMsg($('msg1'), 'No pude leer la planilla: ' + e.message, 'err'); }
   }
 
+  // ---------- carga manual (legajo + fecha + horarios) ----------
+  S.manual = new Map();   // "legajo|fecha" -> [entrada, salida almuerzo, vuelta, salida]
+  function applyManual(plan, st) {
+    for (const [key, slots] of S.manual) {
+      const [legS, date] = key.split('|'); const leg = +legS;
+      const pos = S.map.get(leg); const b = pos && st.blocks.find(x => x.pos === pos); const row = st.dateToRow(date);
+      if (!b || !row) continue;
+      let d = plan.days.find(x => x.legajo === leg && x.date === date);
+      if (!d) { d = { legajo: leg, date, row, col: b.col, orig: [] }; plan.days.push(d); }
+      d.slots = slots.slice(); d.status = F.slotsStatus(d.slots); d.edited = true; d.manual = true; d.skip = false; d.absent = false;
+    }
+  }
+  function fillManualLegajos() {
+    const sel = $('mLeg'); const cur = sel.value; sel.innerHTML = '';
+    const legs = [...S.map.keys()].sort((a, b) => a - b);
+    for (const l of legs) { const o = document.createElement('option'); o.value = l; o.textContent = `${l} · ${S.roster.get(l)?.nombre || ''}`; sel.append(o); }
+    if (legs.includes(+cur)) sel.value = cur;
+    if (!$('mFecha').value && S.per) $('mFecha').value = S.per.hasta;
+    renderManual();
+  }
+  function renderManual() {
+    const body = $('mBody'); body.innerHTML = '';
+    const items = [...S.manual].sort((a, b) => a[0].split('|')[1] < b[0].split('|')[1] ? -1 : 1);
+    $('mWrap').hidden = !items.length;
+    for (const [key, slots] of items) {
+      const [leg, date] = key.split('|'); const tr = document.createElement('tr');
+      const td = (t, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t; tr.append(c); return c; };
+      td(dayLabel(date), 'mono'); td(leg, 'num'); td(S.roster.get(+leg)?.nombre || '');
+      for (const m of slots) td(m == null ? '–' : ap(m), 'mono');
+      const c = td(''); const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'link'; bt.textContent = 'Quitar';
+      bt.addEventListener('click', () => { S.manual.delete(key); renderManual(); rebuildPlan(); });
+      c.append(bt); body.append(tr);
+    }
+  }
+  $('mForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const msg = $('mMsg'); const leg = +$('mLeg').value, date = $('mFecha').value;
+    if (!leg) return setMsg(msg, 'Elegí un legajo.', 'err');
+    if (!date || !S.st.dateToRow(date)) return setMsg(msg, 'Elegí una fecha dentro del año de la planilla.', 'err');
+    const vals = [];
+    for (const id of ['mE', 'mA', 'mV', 'mS']) {
+      const v = $(id).value.trim(); if (!v) { vals.push(null); continue; }
+      const m = parseHM(v); if (m === null) return setMsg(msg, `"${v}" no es un horario válido. Usá el formato HH:MM, por ejemplo 18:30.`, 'err');
+      vals.push(m);
+    }
+    const [e, a, v, s2] = vals;
+    if (e == null || s2 == null) return setMsg(msg, 'Hacen falta al menos la entrada y la salida.', 'err');
+    if ((a == null) !== (v == null)) return setMsg(msg, 'Para el almuerzo cargá las dos marcas (salida y vuelta) o ninguna.', 'err');
+    const seq = vals.filter(x => x != null);
+    if (seq.some((x, i) => i && x <= seq[i - 1])) return setMsg(msg, 'Los horarios tienen que ir en orden: entrada, salida a almuerzo, vuelta, salida.', 'err');
+    const existing = S.plan.days.find(d => d.legajo === leg && d.date === date);
+    const habia = existing && (existing.already || existing.orig.length);
+    S.manual.set(leg + '|' + date, vals);
+    setMsg(msg, `Cargado: ${S.roster.get(leg)?.nombre || leg}, ${dayLabel(date)}, ${seq.map(ap).join(' · ')}.` + (habia ? ' Reemplaza lo que había ese día.' : ''), 'ok');
+    for (const id of ['mE', 'mA', 'mV', 'mS']) $(id).value = '';
+    renderManual(); rebuildPlan();
+  });
+
   function rebuildPlan() {
-    const prev = new Map((S.plan ? S.plan.days : []).filter(d => d.edited).map(d => [d.legajo + '|' + d.date, d]));
+    const prev = new Map((S.plan ? S.plan.days : []).filter(d => d.edited && !d.manual).map(d => [d.legajo + '|' + d.date, d]));
     S.plan = F.buildPlan(S.st, S.log, S.map, { overwrite: $('optOver').checked, desde: $('pDesde').value, hasta: $('pHasta').value });
     for (const d of S.plan.days) {
       const p = prev.get(d.legajo + '|' + d.date);
       if (p) { d.slots = p.slots; d.edited = true; d.status = F.slotsStatus(d.slots); }
     }
+    applyManual(S.plan, S.st);
     renderStats(); renderMap(); renderNotes(); renderFilter(); renderReview();
     scheduleGen();
   }
@@ -1326,7 +1410,7 @@ details.step p { margin: 0 }
       });
       const stc = td(''); const pill = document.createElement('span'); stc.append(pill);
       const paint = () => {
-        const map = { ok: ['ok', d.edited ? 'Corregido' : 'Completo'], falta: ['warn', 'Falta marca'], mas: ['warn', 'Marcas de más'], orden: ['bad', 'Horarios desordenados'], vacio: ['bad', 'Ausente'], ausente: ['bad', 'Ausente · verificar'], error: ['bad', 'Formato inválido'] };
+        const map = { ok: ['ok', d.manual ? 'Cargado a mano' : d.edited ? 'Corregido' : 'Completo'], falta: ['warn', 'Falta marca'], mas: ['warn', 'Marcas de más'], orden: ['bad', 'Horarios desordenados'], vacio: ['bad', 'Ausente'], ausente: ['bad', 'Ausente · verificar'], error: ['bad', 'Formato inválido'] };
         const [c, t] = map[d.uiStatus || d.status]; pill.className = 'pill ' + c; pill.textContent = t;
         const lunch = d.slots[1] != null || d.slots[2] != null; const none = !d.slots.some(x => x != null);
         inputs.forEach((inp, k) => inp.classList.toggle('miss', !none && d.status !== 'ok' && d.slots[k] == null && (k === 0 || k === 3 || lunch)));
@@ -1337,6 +1421,7 @@ details.step p { margin: 0 }
         if (v) { m = parseHM(v); if (m === null) { inp.classList.add('bad'); d.uiStatus = 'error'; paint(); return; } }
         inp.classList.remove('bad'); d.slots = d.slots.slice(); d.slots[k] = m; d.edited = true;
         d.uiStatus = inputs.some(i => i.classList.contains('bad')) ? 'error' : null; d.status = F.slotsStatus(d.slots); if (d.absent && d.status === 'vacio') d.status = 'ausente';
+        if (d.manual) { S.manual.set(d.legajo + '|' + d.date, d.slots.slice()); renderManual(); }
         inp.value = m == null ? '' : ap(m); paint();
         const p = S.plan.days.filter(x => !x.skip && x.status !== 'ok').length; $('revCount').textContent = p ? `${p} días pendientes` : 'Sin días pendientes';
         renderStats(); scheduleGen();
@@ -1369,6 +1454,7 @@ details.step p { margin: 0 }
     const { wb, st } = await openWb();
     const plan = F.buildPlan(st, S.log, S.map, { overwrite: $('optOver').checked, desde: $('pDesde').value, hasta: $('pHasta').value });
     for (const d of plan.days) { const m = edits.get(d.legajo + '|' + d.date); if (m) d.slots = m; }
+    applyManual(plan, st);
     const n = F.applyPlan(wb, st, plan);
     const R = await P.recalcPayroll(wb, st);
     wb.extraDirty = new Map(); for (const name of R.engine.dirty) if (name !== 'Horas Trabajadas') wb.extraDirty.set(wb.sheetPath[name], R.engine.sheet(name).doc);
